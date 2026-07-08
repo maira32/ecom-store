@@ -1,22 +1,39 @@
+import Link from 'next/link';
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <aside className="w-64 bg-slate-900 text-white p-6">
-        <h2 className="text-xl font-bold mb-8">Admin Panel</h2>
-        <nav className="flex flex-col gap-4">
-          <span className="text-gray-300 hover:text-white cursor-pointer">Dashboard</span>
-          <span className="text-gray-300 hover:text-white cursor-pointer">Products</span>
-          <span className="text-gray-300 hover:text-white cursor-pointer">Orders</span>
+    <div className="flex min-h-screen bg-slate-50">
+      
+      <aside className="w-64 bg-slate-900 text-white p-6 flex flex-col">
+        <h2 className="text-xl font-bold mb-8 tracking-tight">Admin Panel</h2>
+        
+        <nav className="flex flex-col gap-4 flex-grow">
+          <Link href="/dashboard" className="text-slate-300 hover:text-white font-medium transition-colors">
+            Dashboard Overview
+          </Link>
+          <Link href="/dashboard/products" className="text-slate-300 hover:text-white font-medium transition-colors">
+            Products
+          </Link>
+          <Link href="/dashboard/categories" className="text-slate-300 hover:text-white font-medium transition-colors">
+            Categories
+          </Link>
         </nav>
+
+        <div className="mt-auto border-t border-slate-700 pt-6">
+          <Link href="/" className="text-slate-400 hover:text-white text-sm transition-colors">
+            ← Back to Store
+          </Link>
+        </div>
       </aside>
       
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 overflow-y-auto h-screen">
         {children}
       </main>
+
     </div>
   );
 }

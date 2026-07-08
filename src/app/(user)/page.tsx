@@ -13,7 +13,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24">
+    <div className="mx-auto max-w-7xl px-4 sm:Flpx-6 lg:px-8 py-24">
       
       <div className="mb-24 flex flex-col items-center text-center">
         <h1 className="mb-6 text-5xl font-extrabold tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
