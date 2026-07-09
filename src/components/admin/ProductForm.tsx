@@ -151,7 +151,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none"
+          className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none placeholder:text-slate-500 text-slate-500"
           placeholder="e.g. Matte Black Watch"
         />
       </div>
@@ -161,7 +161,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none"
+          className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none placeholder:text-slate-500 text-slate-500"
           rows={4}
           placeholder="Describe the product..."
         />
@@ -175,7 +175,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
             step="0.01"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
-            className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none"
+            className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none placeholder:text-slate-500 text-slate-500"
             placeholder="0.00"
           />
         </div>
@@ -185,7 +185,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
             type="number"
             value={stock}
             onChange={(e) => setStock(e.target.value)}
-            className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none"
+            className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none placeholder:text-slate-500 text-slate-500"
             placeholder="0"
           />
         </div>
@@ -196,7 +196,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none"
+          className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none placeholder:text-slate-500 text-slate-500"
         >
           <option value="">Select a category</option>
           {categories.map((cat) => (
