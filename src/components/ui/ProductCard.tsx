@@ -18,11 +18,11 @@ export default function ProductCard({ id, name, price, category }: ProductProps)
       </div>
       
       <div className="flex flex-col gap-y-1 px-1">
-        <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+        <p className="text-xs font-medium uppercase tracking-wider text-slate-700">
           {category}
         </p>
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-slate-900 transition-colors group-hover:text-slate-600">
+          <h3 className="text-base font-semibold text-slate-900 transition-colors group-hover:text-slate-700">
             {name}
           </h3>
           <p className="text-base font-medium text-slate-900">

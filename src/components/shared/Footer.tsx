@@ -29,7 +29,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li><Link href="/contact" className="text-slate-500 hover:text-slate-900 transition-colors">Contact Us</Link></li>
               <li><span className="text-slate-500 hover:text-slate-900 transition-colors cursor-pointer">FAQs</span></li>
-              <li><span className="text-slate-500 hover:text-slate-900 transition-colors cursor-pointer">Shipping & Returns</span></li>
+             
             </ul>
           </div>
 
@@ -43,7 +43,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-slate-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-700">
             © {new Date().getFullYear()} STORE. All rights reserved.
           </p>
         </div>

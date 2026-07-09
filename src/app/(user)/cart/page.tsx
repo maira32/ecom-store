@@ -16,7 +16,7 @@ export default function CartPage() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-24 text-center sm:px-6 lg:px-8">
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-4">Your cart is empty.</h1>
-        <p className="text-slate-500 mb-8 text-lg">Looks like you have not added anything to your cart yet.</p>
+        <p className="text-slate-900 mb-8 text-lg">Looks like you have not added anything to your cart yet.</p>
         <Link 
           href="/categories" 
           className="inline-flex items-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-xl font-semibold hover:bg-slate-800 transition-colors"
@@ -55,7 +55,7 @@ export default function CartPage() {
                         </h3>
                       </div>
                       <p className="mt-1 text-sm font-medium text-slate-900">${item.price.toFixed(2)}</p>
-                      <p className="mt-1 text-sm text-slate-500">Qty: {item.quantity}</p>
+                      <p className="mt-1 text-sm text-slate-900">Qty: {item.quantity}</p>
                     </div>
 
                     <div className="mt-4 sm:mt-0 sm:pr-9">

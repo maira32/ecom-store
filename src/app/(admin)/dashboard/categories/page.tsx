@@ -36,7 +36,7 @@ export default function AdminCategoriesPage() {
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Categories</h1>
-          <p className="mt-2 text-sm text-slate-500">Organize your products into collections.</p>
+          <p className="mt-2 text-sm text-slate-700">Organize your products into collections.</p>
         </div>
       </div>
 
@@ -51,7 +51,7 @@ export default function AdminCategoriesPage() {
                 type="text" 
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none" 
+                className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none placeholder:text-black  " 
                 placeholder="e.g. Summer Collection" 
               />
             </div>
@@ -69,20 +69,20 @@ export default function AdminCategoriesPage() {
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase">Category Name</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase">Products</th>
-                <th className="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase">Action</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase">Category Name</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase">Products</th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {categories.map((cat) => (
                 <tr key={cat.id} className="hover:bg-slate-50">
                   <td className="px-6 py-4 font-medium text-slate-900">{cat.name}</td>
-                  <td className="px-6 py-4 text-sm text-slate-500">{cat.count} items</td>
+                  <td className="px-6 py-4 text-sm text-slate-700">{cat.count} items</td>
                   <td className="px-6 py-4 text-right">
                     <button 
                       onClick={() => handleDeleteCategory(cat.id)}
-                      className="text-slate-400 hover:text-red-600 transition-colors"
+                      className="text-slate-700 hover:text-red-600 transition-colors"
                     >
                       <Trash2 className="h-5 w-5" />
                     </button>
@@ -91,7 +91,7 @@ export default function AdminCategoriesPage() {
               ))}
               {categories.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-6 py-8 text-center text-slate-500">No categories found.</td>
+                  <td colSpan={3} className="px-6 py-8 text-center text-slate-700">No categories found.</td>
                 </tr>
               )}
             </tbody>

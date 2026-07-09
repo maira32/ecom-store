@@ -7,7 +7,7 @@ export default function ContactPage() {
         <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
           Get in touch.
         </h1>
-        <p className="text-lg text-slate-500">
+        <p className="text-lg text-slate-900">
           Have a question about a product, your order, or just want to say hello? We would love to hear from you.
         </p>
       </div>
@@ -18,28 +18,28 @@ export default function ContactPage() {
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Contact Information</h2>
           
           <div className="flex items-start gap-4">
-            <Mail className="w-6 h-6 text-slate-400 mt-1" />
+            <Mail className="w-6 h-6 text-slate-700 mt-1" />
             <div>
               <h3 className="font-semibold text-slate-900">Email</h3>
-              <p className="text-slate-500 mt-1">support@store.com</p>
-              <p className="text-sm text-slate-400 mt-1">We aim to reply within 24 hours.</p>
+              <p className="text-slate-900 mt-1">support@store.com</p>
+              <p className="text-sm text-slate-700 mt-1">We aim to reply within 24 hours.</p>
             </div>
           </div>
 
           <div className="flex items-start gap-4">
-            <MapPin className="w-6 h-6 text-slate-400 mt-1" />
+            <MapPin className="w-6 h-6 text-slate-700 mt-1" />
             <div>
               <h3 className="font-semibold text-slate-900">Office</h3>
-              <p className="text-slate-500 mt-1">Lahore, Pakistan</p>
+              <p className="text-slate-900 mt-1">Lahore, Pakistan</p>
             </div>
           </div>
 
           <div className="flex items-start gap-4">
-            <Phone className="w-6 h-6 text-slate-400 mt-1" />
+            <Phone className="w-6 h-6 text-slate-700 mt-1" />
             <div>
               <h3 className="font-semibold text-slate-900">Phone</h3>
-              <p className="text-slate-500 mt-1">+92 (0) 123 456 7890</p>
-              <p className="text-sm text-slate-400 mt-1">Mon-Fri from 9am to 6pm.</p>
+              <p className="text-slate-900 mt-1">+92 (0) 123 456 7890</p>
+              <p className="text-sm text-slate-700 mt-1">Mon-Fri from 9am to 6pm.</p>
             </div>
           </div>
         </div>
@@ -48,22 +48,22 @@ export default function ContactPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label htmlFor="first-name" className="block text-sm font-medium text-slate-700 mb-2">First name</label>
-              <input type="text" id="first-name" className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all" placeholder="Jane" />
+              <input type="text" id="first-name" className="w-full px-4 py-3 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all placeholder:text-black   " placeholder="Jane" />
             </div>
             <div>
               <label htmlFor="last-name" className="block text-sm font-medium text-slate-700 mb-2">Last name</label>
-              <input type="text" id="last-name" className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all" placeholder="Doe" />
+              <input type="text" id="last-name" className="w-full px-4 py-3 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all placeholder:text-black   " placeholder="Doe" />
             </div>
           </div>
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">Email</label>
-            <input type="email" id="email" className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all" placeholder="you@example.com" />
+            <input type="email" id="email" className="w-full px-4 py-3 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all placeholder:text-black   " placeholder="you@example.com" />
           </div>
 
           <div>
             <label htmlFor="message" className="block text-sm font-medium text-slate-700 mb-2">Message</label>
-            <textarea id="message" rows={5} className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all resize-none" placeholder="How can we help?"></textarea>
+            <textarea id="message" rows={5} className="w-full px-4 py-3 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all resize-none placeholder:text-black   " placeholder="How can we help?"></textarea>
           </div>
 
           <button type="button" className="inline-flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-colors w-full sm:w-auto">

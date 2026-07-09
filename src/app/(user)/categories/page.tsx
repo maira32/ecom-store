@@ -19,7 +19,7 @@ export default function CategoriesPage() {
           <ul className="space-y-4">
             {categories.map((cat) => (
               <li key={cat}>
-                <button className="text-slate-500 hover:text-slate-900 font-medium transition-colors text-sm">
+                <button className="text-slate-900 hover:text-slate-900 font-medium transition-colors text-sm">
                   {cat}
                 </button>
               </li>
@@ -30,7 +30,7 @@ export default function CategoriesPage() {
         <div className="flex-1">
           <div className="mb-8 flex justify-between items-center">
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">All Products</h1>
-            <span className="text-sm text-slate-500 font-medium">{allProducts.length} items</span>
+            <span className="text-sm text-slate-900 font-medium">{allProducts.length} items</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">

@@ -37,7 +37,7 @@ export default function Navbar() {
                   className={`text-sm font-medium transition-colors pt-1 ${
                     isActive 
                       ? 'text-slate-900 border-b-2 border-slate-900 pb-[2px]' 
-                      : 'text-slate-500 hover:text-slate-900 pb-[4px]'
+                      : 'text-slate-600 hover:text-slate-900 pb-[4px]'
                   }`}
                 >
                   {link.name}
@@ -48,7 +48,7 @@ export default function Navbar() {
 
           <div className="flex items-center space-x-6">
             
-            <button className="text-slate-400 hover:text-slate-900 transition-colors">
+            <button className="text-slate-600 hover:text-slate-900 transition-colors">
               <Search className="w-5 h-5" />
             </button>
 
@@ -56,8 +56,8 @@ export default function Navbar() {
               href="/wishlist" 
               className={`transition-colors ${
                 pathname === '/wishlist' 
-                  ? 'text-slate-900' 
-                  : 'text-slate-400 hover:text-slate-900' 
+                  ? 'text-slate-900 border-b-2 border-slate-900' 
+                  : 'text-slate-600 hover:text-slate-900' 
               }`}
             >
               <Heart className="w-5 h-5" />
@@ -67,8 +67,8 @@ export default function Navbar() {
               href="/cart" 
               className={`relative transition-colors ${
                 pathname === '/cart' 
-                  ? 'text-slate-900' 
-                  : 'text-slate-400 hover:text-slate-900'
+                  ? 'text-slate-900 border-b-2 border-slate-900' 
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <ShoppingCart className="w-5 h-5" />
@@ -83,8 +83,8 @@ export default function Navbar() {
               href="/login" 
               className={`transition-colors ${
                 pathname.startsWith('/login') || pathname.startsWith('/dashboard')
-                  ? 'text-slate-900' 
-                  : 'text-slate-400 hover:text-slate-900'
+                  ? 'text-slate-900 border-b-2 border-slate-900' 
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <User className="w-5 h-5" />

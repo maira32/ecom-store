@@ -19,7 +19,7 @@ export default function Home() {
         <h1 className="mb-6 text-5xl font-extrabold tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
           Curated for clarity.
         </h1>
-        <p className="max-w-2xl text-lg text-slate-500">
+        <p className="max-w-2xl text-lg text-slate-900">
           A collection of intentionally designed essentials to elevate your everyday environment. Minimalist form, maximum function.
         </p>
       </div>

@@ -13,7 +13,7 @@ export default function AdminProductsPage() {
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Products</h1>
-          <p className="mt-2 text-sm text-slate-500">Manage your store inventory and catalog.</p>
+          <p className="mt-2 text-sm text-slate-700">Manage your store inventory and catalog.</p>
         </div>
         <div className="mt-4 sm:mt-0">
           <Link 
@@ -30,11 +30,11 @@ export default function AdminProductsPage() {
         <table className="min-w-full divide-y divide-slate-200">
           <thead className="bg-slate-50">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Product Name</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Category</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Price</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Stock</th>
-              <th className="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Product Name</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Category</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Price</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Stock</th>
+              <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 bg-white">
@@ -43,7 +43,7 @@ export default function AdminProductsPage() {
                 <td className="whitespace-nowrap px-6 py-4">
                   <div className="font-medium text-slate-900">{product.name}</div>
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">{product.category}</td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-700">{product.category}</td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-900">${product.price.toFixed(2)}</td>
                 <td className="whitespace-nowrap px-6 py-4">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -56,11 +56,11 @@ export default function AdminProductsPage() {
                   <div className="flex justify-end gap-3">
                     <Link 
                       href={`/dashboard/products/${product.id}`}
-                      className="text-slate-400 hover:text-slate-900 transition-colors"
+                      className="text-slate-700 hover:text-slate-900 transition-colors"
                     >
                       <Edit className="h-5 w-5" />
                     </Link>
-                    <button className="text-slate-400 hover:text-red-600 transition-colors">
+                    <button className="text-slate-700 hover:text-red-600 transition-colors">
                       <Trash2 className="h-5 w-5" />
                     </button>
                   </div>

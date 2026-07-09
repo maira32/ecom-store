@@ -18,11 +18,11 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
         
         <div className="aspect-square bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100">
-          <span className="text-slate-400 font-medium">Product Image Placeholder</span>
+          <span className="text-slate-700 font-medium">Product Image Placeholder</span>
         </div>
 
         <div className="flex flex-col justify-center">
-          <nav className="text-sm text-slate-500 mb-6 flex gap-2">
+          <nav className="text-sm text-slate-700 mb-6 flex gap-2">
             <Link href="/" className="hover:text-slate-900 transition-colors">Home</Link>
             <span>/</span>
             <Link href="/categories" className="hover:text-slate-900 transition-colors">{product.category}</Link>
@@ -35,13 +35,13 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
             ${product.price.toFixed(2)}
           </p>
           
-          <p className="text-slate-600 leading-relaxed mb-8">
+          <p className="text-slate-900 leading-relaxed mb-8">
             {product.description}
           </p>
 
           <ul className="mb-10 space-y-2">
             {product.features.map((feature, idx) => (
-              <li key={idx} className="flex items-center text-slate-600">
+              <li key={idx} className="flex items-center text-slate-900">
                 <span className="w-1.5 h-1.5 bg-slate-900 rounded-full mr-3"></span>
                 {feature}
               </li>
