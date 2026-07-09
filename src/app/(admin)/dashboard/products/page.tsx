@@ -1,12 +1,65 @@
-import { Plus, Edit, Trash2 } from 'lucide-react';
+'use client';
+
+import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  stock: number;
+  category: string;
+}
 
 export default function AdminProductsPage() {
-  const dummyProducts = [
-    { id: "1", name: "Matte Black Watch", price: 120.00, stock: 15, category: "Accessories" },
-    { id: "2", name: "Ceramic Pour-over", price: 45.00, stock: 0, category: "Kitchen" },
-    { id: "3", name: "Leather Tote", price: 189.00, stock: 5, category: "Bags" },
-  ];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/products');
+      const data = await res.json();
+      if (data.success) setProducts(data.data);
+    } catch (err) {
+      console.error('Failed to fetch products:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this product? This cannot be undone.')) return;
+
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setProducts((prev) => prev.filter((p) => p._id !== id));
+      } else {
+        alert('Failed to delete product');
+      }
+    } catch (err) {
+      console.error('Delete failed:', err);
+      alert('Something went wrong');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -16,8 +69,8 @@ export default function AdminProductsPage() {
           <p className="mt-2 text-sm text-slate-700">Manage your store inventory and catalog.</p>
         </div>
         <div className="mt-4 sm:mt-0">
-          <Link 
-            href="/dashboard/products/new" 
+          <Link
+            href="/dashboard/products/new"
             className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
           >
             <Plus className="h-5 w-5" />
@@ -38,8 +91,8 @@ export default function AdminProductsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 bg-white">
-            {dummyProducts.map((product) => (
-              <tr key={product.id} className="hover:bg-slate-50 transition-colors">
+            {products.map((product) => (
+              <tr key={product._id} className="hover:bg-slate-50 transition-colors">
                 <td className="whitespace-nowrap px-6 py-4">
                   <div className="font-medium text-slate-900">{product.name}</div>
                 </td>
@@ -54,19 +107,32 @@ export default function AdminProductsPage() {
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                   <div className="flex justify-end gap-3">
-                    <Link 
-                      href={`/dashboard/products/${product.id}`}
+                    <Link
+                      href={`/dashboard/products/${product._id}`}
                       className="text-slate-700 hover:text-slate-900 transition-colors"
                     >
                       <Edit className="h-5 w-5" />
                     </Link>
-                    <button className="text-slate-700 hover:text-red-600 transition-colors">
-                      <Trash2 className="h-5 w-5" />
+                    <button
+                      onClick={() => handleDelete(product._id)}
+                      disabled={deletingId === product._id}
+                      className="text-slate-700 hover:text-red-600 transition-colors disabled:opacity-50"
+                    >
+                      {deletingId === product._id ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-5 w-5" />
+                      )}
                     </button>
                   </div>
                 </td>
               </tr>
             ))}
+            {products.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-6 py-8 text-center text-slate-700">No products found.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

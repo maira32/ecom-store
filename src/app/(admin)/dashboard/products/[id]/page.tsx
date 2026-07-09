@@ -17,7 +17,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         <p className="mt-2 text-sm text-slate-700">Update details for product ID: {params.id}</p>
       </div>
 
-      <ProductForm />
-    </div>
+<ProductForm productId={params.id} />    </div>
   );
 }

@@ -4,8 +4,7 @@ import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 
-const authOptions: NextAuthOptions = {
-  providers: [
+export const authOptions: NextAuthOptions = {  providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -44,12 +43,14 @@ const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         (token as any).role = (user as any).role;
+        (token as any).id = user.id; 
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
         (session.user as any).role = (token as any).role;
+        (session.user as any).id = (token as any).id; 
       }
       return session;
     }

@@ -16,7 +16,7 @@ const ProductSchema: Schema = new Schema({
   price: { type: Number, required: true },
   category: { type: String, required: true },
   stock: { type: Number, required: true, default: 0 },
-  imageUrl: { type: String },
+  imageUrl: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
 

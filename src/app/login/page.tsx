@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,24 +69,35 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border  text-slate-500 border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none transition-all placeholder:text-slate-500  "
+                className="w-full px-4 py-3 border   border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none transition-all placeholder:text-slate-500 text-slate-500 "
                 placeholder="email@gmail.com"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border  text-slate-500 border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none transition-all placeholder:text-slate-500  "
-                placeholder="••••••••"
-              />
-            </div>
+           <div>
+  <label className="block text-sm font-medium text-slate-700 mb-2">
+    Password
+  </label>
+
+  <div className="relative">
+    <input
+      type={showPassword ? 'text' : 'password'}
+      required
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      className="w-full px-4 py-3 pr-12 border text-slate-500 border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none transition-all placeholder:text-slate-500"
+      placeholder="••••••••"
+    />
+
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute inset-y-0 right-0 flex items-center px-4 text-slate-500 hover:text-slate-700"
+    >
+      {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+    </button>
+  </div>
+</div>
           </div>
 
           <button
@@ -96,8 +109,14 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="text-center mt-6">
-          <Link href="/" className="text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors">
+       <div className="text-center mt-6 space-y-2">
+          <p className="text-sm text-slate-600">
+            Don't have an account?{' '}
+            <Link href="/signup" className="font-semibold text-slate-900 hover:underline">
+              Sign up
+            </Link>
+          </p>
+          <Link href="/" className="block text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
             &larr; Back to Store
           </Link>
         </div>

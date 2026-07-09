@@ -1,164 +1,234 @@
 'use client';
 
-import { UploadCloud, X } from 'lucide-react';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation'; 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2, UploadCloud } from 'lucide-react';
 
-export default function ProductForm() {
+interface Category {
+  _id: string;
+  name: string;
+}
+
+interface ProductFormProps {
+  productId?: string;
+}
+
+export default function ProductForm({ productId }: ProductFormProps) {
   const router = useRouter();
-  const [dragActive, setDragActive] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const categories = ["Accessories", "Kitchen", "Bags", "Workspace", "Tech"]; 
+  const isEditMode = Boolean(productId);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    price: '',
-    category: '',
-    description: '',
-  });
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('');
+  const [stock, setStock] = useState('');
+  const [category, setCategory] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(isEditMode);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setCategories(data.data);
+      })
+      .catch((err) => console.error('Failed to load categories:', err));
+  }, []);
+
+  useEffect(() => {
+    if (!productId) return;
+
+    fetch(`/api/products/${productId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          const p = data.data;
+          setName(p.name);
+          setDescription(p.description || '');
+          setPrice(String(p.price));
+          setStock(String(p.stock));
+          setCategory(p.category);
+          setImageUrl(p.imageUrl || '');
+        }
+      })
+      .catch((err) => console.error('Failed to load product:', err))
+      .finally(() => setLoading(false));
+  }, [productId]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append(
+        'upload_preset',
+        process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET as string
+      );
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: 'POST', body: formData }
+      );
+      const data = await res.json();
+
+      if (data.secure_url) {
+        setImageUrl(data.secure_url);
+      } else {
+        setError('Image upload failed');
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      setError('Image upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setError('');
+
+    if (!name.trim() || !description.trim() || !price || !stock || !category) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    setSubmitting(true);
+    const payload = {
+      name: name.trim(),
+      description: description.trim(),
+      price: parseFloat(price),
+      stock: parseInt(stock, 10),
+      category,
+      imageUrl,
+    };
 
     try {
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          price: parseFloat(formData.price), 
-          category: formData.category,
-          description: formData.description,
-          stock: 10, 
-          imageUrl: `https://picsum.photos/seed/${formData.name.replace(/\s+/g, '')}/600/600`, 
-        }),
-      });
-
-      const data = await response.json();
+      const res = await fetch(
+        isEditMode ? `/api/products/${productId}` : '/api/products',
+        {
+          method: isEditMode ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      );
+      const data = await res.json();
 
       if (data.success) {
         router.push('/dashboard/products');
-        router.refresh(); 
+        router.refresh();
       } else {
-        alert("Failed to save product.");
+        setError(data.message || 'Failed to save product');
       }
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      alert("An error occurred connecting to the database.");
+    } catch (err) {
+      console.error('Save failed:', err);
+      setError('Something went wrong');
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
-    else if (e.type === "dragleave") setDragActive(false);
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+      </div>
+    );
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm max-w-4xl">
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Product Name</label>
-            <input 
-              type="text" 
-              name="name"
-              required
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none placeholder:text-black  " 
-              placeholder="e.g. Minimalist Watch" 
-            />
-          </div>
+    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Product Name</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none"
+          placeholder="e.g. Matte Black Watch"
+        />
+      </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Price ($)</label>
-              <input 
-                type="number" 
-                name="price"
-                step="0.01" 
-                required
-                value={formData.price}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none placeholder:text-black  " 
-                placeholder="0.00" 
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
-              <select 
-                name="category"
-                required
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none bg-white text-slate-900  "
-              >
-                <option value="">Select category...</option>
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none"
+          rows={4}
+          placeholder="Describe the product..."
+        />
+      </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
-            <textarea 
-              name="description"
-              rows={5} 
-              required
-              value={formData.description}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none resize-none placeholder:text-black  " 
-              placeholder="Product details..."
-            ></textarea>
-          </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Price</label>
+          <input
+            type="number"
+            step="0.01"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none"
+            placeholder="0.00"
+          />
         </div>
-
-        <div className="space-y-6">
-          <label className="block text-sm font-medium text-slate-700 mb-2">Product Image</label>
-          <div 
-            className={`relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-xl transition-colors ${
-              dragActive ? 'border-slate-900 bg-slate-50' : 'border-slate-300 hover:bg-slate-50'
-            }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrag} 
-          >
-            <div className="flex flex-col items-center justify-center pt-5 pb-6 text-slate-700">
-              <UploadCloud className="w-10 h-10 mb-3 text-slate-700" />
-              <p className="mb-2 text-sm font-semibold">Image Upload Disabled</p>
-              <p className="text-xs text-center px-4">A high-quality placeholder image will be assigned automatically upon save.</p>
-            </div>
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Stock</label>
+          <input
+            type="number"
+            value={stock}
+            onChange={(e) => setStock(e.target.value)}
+            className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none"
+            placeholder="0"
+          />
         </div>
       </div>
 
-      <div className="flex justify-end gap-4 border-t border-slate-100 pt-6">
-        <button 
-          type="button" 
-          onClick={() => router.push('/dashboard/products')} 
-          className="px-6 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none"
         >
-          Cancel
-        </button>
-        <button 
-          type="submit" 
-          disabled={isSubmitting}
-          className="px-6 py-3 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50"
-        >
-          {isSubmitting ? 'Saving...' : 'Save Product'}
-        </button>
+          <option value="">Select a category</option>
+          {categories.map((cat) => (
+            <option key={cat._id} value={cat.name}>{cat.name}</option>
+          ))}
+        </select>
       </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Product Image</label>
+        <div className="flex items-center gap-4">
+          {imageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={imageUrl} alt="Product" className="h-16 w-16 rounded-lg object-cover border border-slate-200" />
+          )}
+          <label className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 text-sm text-slate-700">
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+            {uploading ? 'Uploading...' : 'Upload image'}
+            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploading} />
+          </label>
+        </div>
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <button
+        type="submit"
+        disabled={submitting || uploading}
+        className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
+      >
+        {submitting ? 'Saving...' : isEditMode ? 'Update Product' : 'Create Product'}
+      </button>
     </form>
   );
 }

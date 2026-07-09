@@ -1,28 +1,45 @@
-import { ShoppingCart, Heart } from 'lucide-react';
+import { connectDB } from '@/lib/mongodb';
+import Product from '@/models/Product';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import AddToCartButton from '@/components/ui/AddToCartButton';
-import WishlistButton from '@/components/ui/WishlistButton';
 
-export default function ProductDetails({ params }: { params: { id: string } }) {
-  const product = {
-    id: params.id,
-    name: "Matte Black Watch",
-    price: 120.00,
-    description: "A masterclass in minimalist design. Featuring a sandblasted stainless steel case, a stark black dial with no indices, and a premium leather strap. Water-resistant up to 50 meters. Designed for those who value understated elegance.",
-    category: "Accessories",
-    features: ["40mm Case", "Sapphire Crystal", "Swiss Movement", "Genuine Leather"],
-  };
+// Next.js 15/16 requires params to be treated as a Promise
+export default async function ProductDetails({ params }: { params: Promise<{ id: string }> }) {
+  await connectDB();
+
+  // 1. Await the params promise to get the URL id safely
+  const resolvedParams = await params;
+  const productId = resolvedParams.id;
+
+  // 2. Validate that the ID is a proper 24-character hex string before checking MongoDB
+  if (!productId.match(/^[0-9a-fA-F]{24}$/)) {
+    notFound(); 
+  }
+
+  // 3. Fetch the real product from your database
+  const product = await Product.findById(productId);
+
+  if (!product) {
+    notFound();
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
         
-        <div className="aspect-square bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100">
-          <span className="text-slate-700 font-medium">Product Image Placeholder</span>
+        {/* Real Database Image Component */}
+        <div className="aspect-square bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 relative group">
+          <img 
+            src={product.imageUrl || `https://picsum.photos/seed/${product.name.replace(/\s+/g, '')}/600/600`}
+            alt={product.name} 
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
         </div>
 
+        {/* Product Details Column */}
         <div className="flex flex-col justify-center">
-          <nav className="text-sm text-slate-700 mb-6 flex gap-2">
+          <nav className="text-sm text-slate-500 mb-6 flex gap-2">
             <Link href="/" className="hover:text-slate-900 transition-colors">Home</Link>
             <span>/</span>
             <Link href="/categories" className="hover:text-slate-900 transition-colors">{product.category}</Link>
@@ -35,22 +52,19 @@ export default function ProductDetails({ params }: { params: { id: string } }) {
             ${product.price.toFixed(2)}
           </p>
           
-          <p className="text-slate-900 leading-relaxed mb-8">
+          <p className="text-slate-600 leading-relaxed mb-8">
             {product.description}
           </p>
 
-          <ul className="mb-10 space-y-2">
-            {product.features.map((feature, idx) => (
-              <li key={idx} className="flex items-center text-slate-900">
-                <span className="w-1.5 h-1.5 bg-slate-900 rounded-full mr-3"></span>
-                {feature}
-              </li>
-            ))}
-          </ul>
-
-         <div className="flex gap-4">
-            <AddToCartButton product={{ id: product.id, name: product.name, price: product.price }} />
-            <WishlistButton product={{ id: product.id, name: product.name, price: product.price }} />
+          <div className="flex gap-4 mt-8">
+            {/* Passing the clean database properties to the button client side */}
+            <AddToCartButton 
+              product={{ 
+                id: product._id.toString(), 
+                name: product.name, 
+                price: product.price 
+              }} 
+            />
           </div>
         </div>
 

@@ -4,10 +4,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ShoppingCart, User, Search, Heart } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
+import { signOut, useSession } from 'next-auth/react';
 
-export default function Navbar() {
+interface NavbarProps {
+  cartCount?: number;
+}
+
+export default function Navbar({ cartCount = 0 }: NavbarProps) {
+  const { data: session } = useSession();
   const pathname = usePathname();
-  const totalItems = useCartStore((state) => state.totalItems());
   
   const navLinks = [
     { name: 'Home', href: '/' },
@@ -63,32 +68,33 @@ export default function Navbar() {
               <Heart className="w-5 h-5" />
             </Link>
             
-            <Link 
-              href="/cart" 
-              className={`relative transition-colors ${
-                pathname === '/cart' 
-                  ? 'text-slate-900 border-b-2 border-slate-900' 
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <ShoppingCart className="w-5 h-5" />
-              {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 bg-slate-900 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {totalItems}
-                </span>
-              )}
-            </Link>
+            <Link href="/cart" className="relative text-slate-400 hover:text-slate-900 transition-colors">
+  <ShoppingCart className="w-5 h-5" />
+  {/* Update this badge to use cartCount */}
+  {cartCount > 0 && (
+    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+      {cartCount}
+    </span>
+  )}
+</Link>
             
-            <Link 
-              href="/login" 
-              className={`transition-colors ${
-                pathname.startsWith('/login') || pathname.startsWith('/dashboard')
-                  ? 'text-slate-900 border-b-2 border-slate-900' 
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <User className="w-5 h-5" />
-            </Link>
+            {session ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-xs font-semibold text-slate-500 hidden sm:block">
+                  Hi, {session.user?.name?.split(' ')[0]}
+                </span>
+                <button 
+                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  className="text-sm font-medium text-red-500 hover:text-red-700 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link href="/login" className="text-slate-400 hover:text-slate-900 transition-colors">
+                <User className="w-5 h-5" />
+              </Link>
+            )}
 
           </div>
           

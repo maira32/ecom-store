@@ -1,109 +1,80 @@
-'use client';
-
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { connectDB } from '@/lib/mongodb';
+import Cart from '@/models/Cart';
 import Link from 'next/link';
-import { Trash2, ArrowRight } from 'lucide-react';
-import { useCartStore } from '@/lib/store';
 
-export default function CartPage() {
-  const cart = useCartStore((state) => state.cart);
-  const removeFromCart = useCartStore((state) => state.removeFromCart);
+export default async function CartPage() {
+  const session = await getServerSession(authOptions);
 
-  const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-  const shipping = subtotal > 0 ? 15.00 : 0; 
-  const total = subtotal + shipping;
-
-  if (cart.length === 0) {
+  if (!session) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-24 text-center sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-4">Your cart is empty.</h1>
-        <p className="text-slate-900 mb-8 text-lg">Looks like you have not added anything to your cart yet.</p>
-        <Link 
-          href="/categories" 
-          className="inline-flex items-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-xl font-semibold hover:bg-slate-800 transition-colors"
-        >
-          Continue Shopping
-          <ArrowRight className="w-5 h-5" />
+      <div className="max-w-7xl mx-auto px-4 py-24 text-center">
+        <h2 className="text-2xl font-bold text-slate-900 mb-4">Your Cart is Empty</h2>
+        <p className="text-slate-600 mb-8">Please log in to view your cart.</p>
+        <Link href="/login" className="px-6 py-3 bg-slate-900 text-white rounded-xl font-semibold">
+          Log In
         </Link>
       </div>
     );
   }
 
+  await connectDB();
+  
+  // Fetch the cart and populate the product details
+  const cart = await Cart.findOne({ user: (session.user as any).id }).populate('items.product');
+
+  // Calculate the total price
+  const cartTotal = cart?.items.reduce((total: number, item: any) => {
+    return total + (item.product.price * item.quantity);
+  }, 0) || 0;
+
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24">
-      <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-12">Shopping Cart</h1>
-
-      <div className="lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-12 xl:gap-x-16">
-        
-        <section className="lg:col-span-7">
-          <ul role="list" className="divide-y divide-slate-200 border-t border-b border-slate-200">
-            {cart.map((item) => (
-              <li key={item.id} className="flex py-6 sm:py-10">
-                <div className="flex-shrink-0">
-                  <div className="h-24 w-24 sm:h-32 sm:w-32 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 text-xs">
-                    Image
-                  </div>
+    <div className="max-w-7xl mx-auto px-4 py-16">
+      <h1 className="text-3xl font-extrabold text-slate-900 mb-10">Shopping Cart</h1>
+      
+      {!cart || cart.items.length === 0 ? (
+        <p className="text-slate-600">Your cart is currently empty.</p>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          
+          {/* Cart Items List */}
+          <div className="lg:col-span-2 space-y-6">
+            {cart.items.map((item: any) => (
+              <div key={item._id.toString()} className="flex items-center gap-6 p-4 border border-slate-100 rounded-2xl bg-white shadow-sm">
+                <div className="w-24 h-24 bg-slate-50 rounded-xl overflow-hidden relative">
+                  <img src={item.product.imageUrl} alt={item.product.name} className="object-cover w-full h-full" />
                 </div>
-
-                <div className="ml-4 flex flex-1 flex-col justify-between sm:ml-6">
-                  <div className="relative pr-9 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:pr-0">
-                    <div>
-                      <div className="flex justify-between">
-                        <h3 className="text-lg font-semibold text-slate-900">
-                          <Link href={`/product/${item.id}`} className="hover:text-slate-600">
-                            {item.name}
-                          </Link>
-                        </h3>
-                      </div>
-                      <p className="mt-1 text-sm font-medium text-slate-900">${item.price.toFixed(2)}</p>
-                      <p className="mt-1 text-sm text-slate-900">Qty: {item.quantity}</p>
-                    </div>
-
-                    <div className="mt-4 sm:mt-0 sm:pr-9">
-                      <button
-                        type="button"
-                        onClick={() => removeFromCart(item.id)}
-                        className="-m-2 inline-flex p-2 text-slate-400 hover:text-red-500 transition-colors"
-                      >
-                        <span className="sr-only">Remove</span>
-                        <Trash2 className="h-5 w-5" aria-hidden="true" />
-                      </button>
-                    </div>
-                  </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-slate-900">{item.product.name}</h3>
+                  <p className="text-slate-500">${item.product.price.toFixed(2)}</p>
+                  <p className="text-sm text-slate-400 mt-1">Qty: {item.quantity}</p>
                 </div>
-              </li>
+                <div className="text-right font-bold text-slate-900">
+                  ${(item.product.price * item.quantity).toFixed(2)}
+                </div>
+              </div>
             ))}
-          </ul>
-        </section>
+          </div>
 
-        <section className="mt-16 rounded-2xl bg-slate-50 border border-slate-100 px-4 py-6 sm:p-6 lg:col-span-5 lg:mt-0 lg:p-8">
-          <h2 className="text-lg font-semibold text-slate-900 mb-6">Order summary</h2>
-
-          <dl className="mt-6 space-y-4 text-sm text-slate-600">
-            <div className="flex items-center justify-between">
-              <dt>Subtotal</dt>
-              <dd className="font-medium text-slate-900">${subtotal.toFixed(2)}</dd>
+          {/* Order Summary */}
+          <div className="bg-slate-50 p-8 rounded-2xl h-fit border border-slate-100">
+            <h3 className="text-xl font-bold text-slate-900 mb-6">Order Summary</h3>
+            <div className="flex justify-between border-b border-slate-200 pb-4 mb-4 text-slate-600">
+              <span>Subtotal</span>
+              <span>${cartTotal.toFixed(2)}</span>
             </div>
-            <div className="flex items-center justify-between border-t border-slate-200 pt-4">
-              <dt>Shipping estimate</dt>
-              <dd className="font-medium text-slate-900">${shipping.toFixed(2)}</dd>
+            <div className="flex justify-between font-bold text-xl text-slate-900 mb-8">
+              <span>Total</span>
+              <span>${cartTotal.toFixed(2)}</span>
             </div>
-            <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-base font-bold text-slate-900">
-              <dt>Order total</dt>
-              <dd>${total.toFixed(2)}</dd>
-            </div>
-          </dl>
-
-          <div className="mt-8">
-            <button
-              type="button"
-              className="w-full rounded-xl bg-slate-900 px-4 py-4 text-base font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
-            >
-              Checkout
+            <button className="w-full py-4 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors">
+              Proceed to Checkout
             </button>
           </div>
-        </section>
-        
-      </div>
+
+        </div>
+      )}
     </div>
   );
 }

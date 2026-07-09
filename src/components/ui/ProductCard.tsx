@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-interface ProductProps {
+interface ProductCardProps {
   id: string;
   name: string;
   price: number;
@@ -8,28 +8,42 @@ interface ProductProps {
   category: string;
 }
 
-export default function ProductCard({ id, name, price, category }: ProductProps) {
+export default function ProductCard({ id, name, price, imageUrl, category }: ProductCardProps) {
   return (
-    <Link href={`/product/${id}`} className="group flex flex-col gap-y-3">
-      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-slate-50 transition-all duration-300 group-hover:bg-slate-100 group-hover:shadow-md border border-slate-100">
-        <div className="absolute inset-0 flex items-center justify-center text-slate-300 text-sm font-medium tracking-wide transition-transform duration-500 group-hover:scale-105">
-          {name} Image
-        </div>
-      </div>
+    <div className="group relative flex flex-col bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100">
       
-      <div className="flex flex-col gap-y-1 px-1">
-        <p className="text-xs font-medium uppercase tracking-wider text-slate-700">
-          {category}
-        </p>
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-slate-900 transition-colors group-hover:text-slate-700">
-            {name}
-          </h3>
-          <p className="text-base font-medium text-slate-900">
+      {/* Image Container */}
+      <div className="aspect-square w-full overflow-hidden bg-slate-50 relative">
+        <img
+          src={imageUrl}
+          alt={`${name} Image`}
+          className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
+        />
+        {/* Subtle overlay on hover for a premium feel */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
+      </div>
+
+      {/* Product Info (Now with padding inside the rounded card) */}
+      <div className="p-6 flex flex-col">
+        <div className="flex justify-between items-start gap-4">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+              {category}
+            </p>
+            <h3 className="text-lg font-semibold text-slate-900 leading-tight">
+              <Link href={`/product/${id}`}>
+                {/* This empty span makes the entire card clickable! */}
+                <span aria-hidden="true" className="absolute inset-0" />
+                {name}
+              </Link>
+            </h3>
+          </div>
+          <p className="text-lg font-bold text-slate-900 shrink-0">
             ${price.toFixed(2)}
           </p>
         </div>
       </div>
-    </Link>
+      
+    </div>
   );
 }
