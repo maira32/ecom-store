@@ -70,7 +70,6 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
             
             <Link href="/cart" className="relative text-slate-400 hover:text-slate-900 transition-colors">
   <ShoppingCart className="w-5 h-5" />
-  {/* Update this badge to use cartCount */}
   {cartCount > 0 && (
     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
       {cartCount}
