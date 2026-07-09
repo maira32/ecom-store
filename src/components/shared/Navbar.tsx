@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, User, Search, Heart } from 'lucide-react';
+import { ShoppingCart, User, Search, Heart, LayoutDashboard } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { signOut, useSession } from 'next-auth/react';
 
@@ -13,7 +13,9 @@ interface NavbarProps {
 export default function Navbar({ cartCount = 0 }: NavbarProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
-  
+
+  const isAdmin = session?.user?.role === 'admin';
+
   const navLinks = [
     { name: 'Home', href: '/' },
     { name: 'Categories', href: '/categories' },
@@ -52,6 +54,16 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
           </div>
 
           <div className="flex items-center space-x-6">
+
+            {isAdmin && (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Admin Panel</span>
+              </Link>
+            )}
             
             <button className="text-slate-600 hover:text-slate-900 transition-colors">
               <Search className="w-5 h-5" />

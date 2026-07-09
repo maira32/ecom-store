@@ -2,7 +2,9 @@ import ProductForm from "@/components/admin/ProductForm";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
+export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   return (
     <div className="max-w-4xl">
       <div className="mb-8">
@@ -14,9 +16,10 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
           Back to Products
         </Link>
         <h1 className="text-3xl font-bold text-slate-900">Edit Product</h1>
-        <p className="mt-2 text-sm text-slate-700">Update details for product ID: {params.id}</p>
+        <p className="mt-2 text-sm text-slate-700">Update details for product ID: {id}</p>
       </div>
 
-<ProductForm productId={params.id} />    </div>
+      <ProductForm productId={id} />
+    </div>
   );
 }
