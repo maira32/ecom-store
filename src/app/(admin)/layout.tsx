@@ -10,12 +10,14 @@ import {
   ArrowLeft,
   Menu,
   X,
+  Mail,
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard Overview', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Products', href: '/dashboard/products', icon: Package },
   { name: 'Categories', href: '/dashboard/categories', icon: Tags },
+  { name: 'Messages', href: '/dashboard/messages', icon: Mail },
 ];
 
 export default function AdminLayout({
