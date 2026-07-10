@@ -12,18 +12,15 @@ export default function ProductCard({ id, name, price, imageUrl, category }: Pro
   return (
     <div className="group relative flex flex-col bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100">
       
-      {/* Image Container */}
       <div className="aspect-square w-full overflow-hidden bg-slate-50 relative">
         <img
           src={imageUrl}
           alt={`${name} Image`}
           className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-110"
         />
-        {/* Subtle overlay on hover for a premium feel */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
       </div>
 
-      {/* Product Info (Now with padding inside the rounded card) */}
       <div className="p-6 flex flex-col">
         <div className="flex justify-between items-start gap-4">
           <div>
@@ -32,7 +29,6 @@ export default function ProductCard({ id, name, price, imageUrl, category }: Pro
             </p>
             <h3 className="text-lg font-semibold text-slate-900 leading-tight">
               <Link href={`/product/${id}`}>
-                {/* This empty span makes the entire card clickable! */}
                 <span aria-hidden="true" className="absolute inset-0" />
                 {name}
               </Link>

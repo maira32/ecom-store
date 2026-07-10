@@ -4,20 +4,16 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AddToCartButton from '@/components/ui/AddToCartButton';
 
-// Next.js 15/16 requires params to be treated as a Promise
 export default async function ProductDetails({ params }: { params: Promise<{ id: string }> }) {
   await connectDB();
 
-  // 1. Await the params promise to get the URL id safely
   const resolvedParams = await params;
   const productId = resolvedParams.id;
 
-  // 2. Validate that the ID is a proper 24-character hex string before checking MongoDB
   if (!productId.match(/^[0-9a-fA-F]{24}$/)) {
     notFound(); 
   }
 
-  // 3. Fetch the real product from your database
   const product = await Product.findById(productId);
 
   if (!product) {
@@ -28,7 +24,6 @@ export default async function ProductDetails({ params }: { params: Promise<{ id:
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
         
-        {/* Real Database Image Component */}
         <div className="aspect-square bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 relative group">
           <img 
             src={product.imageUrl || `https://picsum.photos/seed/${product.name.replace(/\s+/g, '')}/600/600`}
@@ -37,7 +32,6 @@ export default async function ProductDetails({ params }: { params: Promise<{ id:
           />
         </div>
 
-        {/* Product Details Column */}
         <div className="flex flex-col justify-center">
           <nav className="text-sm text-slate-500 mb-6 flex gap-2">
             <Link href="/" className="hover:text-slate-900 transition-colors">Home</Link>
@@ -57,7 +51,6 @@ export default async function ProductDetails({ params }: { params: Promise<{ id:
           </p>
 
           <div className="flex gap-4 mt-8">
-            {/* Passing the clean database properties to the button client side */}
             <AddToCartButton 
               product={{ 
                 id: product._id.toString(), 

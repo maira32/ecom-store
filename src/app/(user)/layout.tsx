@@ -6,11 +6,9 @@ import { connectDB } from '@/lib/mongodb';
 import Cart from '@/models/Cart';
 
 export default async function UserLayout({ children }: { children: React.ReactNode }) {
-  // 1. Check the secure session
   const session = await getServerSession(authOptions);
   let cartCount = 0;
 
-  // 2. Count their items in MongoDB if they are logged in
   if (session && (session.user as any).id) {
     try {
       await connectDB();

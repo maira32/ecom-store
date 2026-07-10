@@ -21,10 +21,8 @@ export default async function CartPage() {
 
   await connectDB();
   
-  // Fetch the cart and populate the product details
   const cart = await Cart.findOne({ user: (session.user as any).id }).populate('items.product');
 
-  // Calculate the total price
   const cartTotal = cart?.items.reduce((total: number, item: any) => {
     return total + (item.product.price * item.quantity);
   }, 0) || 0;
@@ -38,7 +36,6 @@ export default async function CartPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           
-          {/* Cart Items List */}
           <div className="lg:col-span-2 space-y-6">
             {cart.items.map((item: any) => (
               <div key={item._id.toString()} className="flex items-center gap-6 p-4 border border-slate-100 rounded-2xl bg-white shadow-sm">
@@ -57,7 +54,6 @@ export default async function CartPage() {
             ))}
           </div>
 
-          {/* Order Summary */}
           <div className="bg-slate-50 p-8 rounded-2xl h-fit border border-slate-100">
             <h3 className="text-xl font-bold text-slate-900 mb-6">Order Summary</h3>
             <div className="flex justify-between border-b border-slate-200 pb-4 mb-4 text-slate-600">
