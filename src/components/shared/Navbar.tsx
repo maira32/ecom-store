@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { ShoppingCart, User, Search, Heart, LayoutDashboard } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { ShoppingCart, User, Search, Heart, LayoutDashboard, Menu, X } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { signOut, useSession } from 'next-auth/react';
 
@@ -13,8 +14,13 @@ interface NavbarProps {
 export default function Navbar({ cartCount = 0 }: NavbarProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const router = useRouter();
 
   const isAdmin = session?.user?.role === 'admin';
+
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const navLinks = [
     { name: 'Home', href: '/' },
@@ -22,13 +28,29 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
     { name: 'Contact', href: '/contact' },
   ];
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    setSearchQuery('');
+    setSearchOpen(false);
+    setMobileOpen(false);
+  };
+
   return (
     <nav className="border-b border-slate-100 bg-white sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          
-          <div className="flex-shrink-0 flex items-center">
-            <Link href="/" className="text-2xl font-bold tracking-tighter text-slate-900">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center gap-2">
+
+          <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="md:hidden p-1.5 -ml-1 text-slate-700 hover:text-slate-900 flex-shrink-0"
+              aria-label="Toggle menu"
+            >
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+            <Link href="/" className="text-lg sm:text-2xl font-bold tracking-tighter text-slate-900 truncate">
               LuxeLane
             </Link>
           </div>
@@ -36,14 +58,13 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
           <div className="hidden md:flex space-x-8">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
-
               return (
-                <Link 
-                  key={link.name} 
+                <Link
+                  key={link.name}
                   href={link.href}
                   className={`text-sm font-medium transition-colors pt-1 ${
-                    isActive 
-                      ? 'text-slate-900 border-b-2 border-slate-900 pb-[2px]' 
+                    isActive
+                      ? 'text-slate-900 border-b-2 border-slate-900 pb-[2px]'
                       : 'text-slate-600 hover:text-slate-900 pb-[4px]'
                   }`}
                 >
@@ -53,48 +74,50 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
             })}
           </div>
 
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-2 sm:space-x-6 flex-shrink-0">
 
             {isAdmin && (
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
               >
                 <LayoutDashboard className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Admin Panel</span>
+                <span className="hidden md:inline">Admin Panel</span>
               </Link>
             )}
-            
-            <button className="text-slate-600 hover:text-slate-900 transition-colors">
+
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="text-slate-600 hover:text-slate-900 transition-colors"
+              aria-label="Search"
+            >
               <Search className="w-5 h-5" />
             </button>
 
-            <Link 
-              href="/wishlist" 
-              className={`transition-colors ${
-                pathname === '/wishlist' 
-                  ? 'text-slate-900 border-b-2 border-slate-900' 
-                  : 'text-slate-600 hover:text-slate-900' 
+            <Link
+              href="/wishlist"
+              className={`hidden sm:block transition-colors ${
+                pathname === '/wishlist' ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Heart className="w-5 h-5" />
             </Link>
-            
-            <Link href="/cart" className="relative text-slate-400 hover:text-slate-900 transition-colors">
-  <ShoppingCart className="w-5 h-5" />
-  {cartCount > 0 && (
-    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
-      {cartCount}
-    </span>
-  )}
-</Link>
-            
+
+            <Link href="/cart" className="relative text-slate-600 hover:text-slate-900 transition-colors">
+              <ShoppingCart className="w-5 h-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
             {session ? (
-              <div className="flex items-center space-x-4">
-                <span className="text-xs font-semibold text-slate-500 hidden sm:block">
+              <div className="hidden sm:flex items-center space-x-4">
+                <span className="text-xs font-semibold text-slate-500">
                   Hi, {session.user?.name?.split(' ')[0]}
                 </span>
-                <button 
+                <button
                   onClick={() => signOut({ callbackUrl: '/login' })}
                   className="text-sm font-medium text-red-500 hover:text-red-700 transition-colors"
                 >
@@ -102,15 +125,102 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
                 </button>
               </div>
             ) : (
-              <Link href="/login" className="text-slate-400 hover:text-slate-900 transition-colors">
+              <Link href="/login" className="hidden sm:block text-slate-600 hover:text-slate-900 transition-colors">
                 <User className="w-5 h-5" />
               </Link>
             )}
 
           </div>
-          
+
         </div>
+
+        {/* --- UPDATED RESPONSIVE SEARCH BAR --- */}
+        {searchOpen && (
+          <div className="pb-4 w-full">
+            <form onSubmit={handleSearch} className="flex gap-2 w-full">
+              <input
+                type="text"
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products..."
+                // Added min-w-0 to prevent flexbox overflow on micro screens
+                // Scaled down padding slightly for mobile
+                className="flex-1 min-w-0 px-3 sm:px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none text-sm text-slate-900"
+              />
+              <button
+                type="submit"
+                // Added flex-shrink-0 to ensure the button never squishes
+                className="flex-shrink-0 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors"
+              >
+                Search
+              </button>
+            </form>
+          </div>
+        )}
+        {/* ------------------------------------- */}
       </div>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="md:hidden border-t border-slate-100 bg-white px-4 py-4 space-y-3">
+          {navLinks.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.name}
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                className={`block text-sm font-medium py-2 ${
+                  isActive ? 'text-slate-900 font-semibold' : 'text-slate-600'
+                }`}
+              >
+                {link.name}
+              </Link>
+            );
+          })}
+
+          {isAdmin && (
+            <Link
+              href="/dashboard"
+              onClick={() => setMobileOpen(false)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              Admin Panel
+            </Link>
+          )}
+
+          <Link
+            href="/wishlist"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center gap-2 text-sm font-medium text-slate-600 py-2"
+          >
+            <Heart className="w-4 h-4" />
+            Wishlist
+          </Link>
+
+          <div className="pt-2 border-t border-slate-100">
+            {session ? (
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500">
+                  Hi, {session.user?.name?.split(' ')[0]}
+                </span>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  className="text-sm font-medium text-red-500"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link href="/login" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-slate-600">
+                Login
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

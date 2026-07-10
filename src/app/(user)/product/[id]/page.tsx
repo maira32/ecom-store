@@ -3,6 +3,7 @@ import Product from '@/models/Product';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AddToCartButton from '@/components/ui/AddToCartButton';
+import WishlistButton from '@/components/ui/WishlistButton';
 
 export default async function ProductDetails({ params }: { params: Promise<{ id: string }> }) {
   await connectDB();
@@ -57,6 +58,15 @@ export default async function ProductDetails({ params }: { params: Promise<{ id:
                 name: product.name, 
                 price: product.price 
               }} 
+            />
+            <WishlistButton
+              product={{
+                id: product._id.toString(),
+                name: product.name,
+                price: product.price,
+                imageUrl: product.imageUrl,
+              }}
+              variant="detail"
             />
           </div>
         </div>

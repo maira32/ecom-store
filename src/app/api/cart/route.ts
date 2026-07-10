@@ -69,3 +69,90 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Server Error" }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !(session.user as any).id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { productId, quantity } = await request.json();
+    const userId = (session.user as any).id;
+
+    if (!productId || typeof quantity !== 'number' || quantity < 1) {
+      return NextResponse.json({ message: "Invalid productId or quantity" }, { status: 400 });
+    }
+
+    await connectDB();
+
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) {
+      return NextResponse.json({ message: "Cart not found" }, { status: 404 });
+    }
+
+    const itemIndex = cart.items.findIndex(
+      (item: any) => item.product.toString() === productId
+    );
+
+    if (itemIndex === -1) {
+      return NextResponse.json({ message: "Item not in cart" }, { status: 404 });
+    }
+
+    cart.items[itemIndex].quantity = quantity;
+    await cart.save();
+
+    const updatedCart = await Cart.findOne({ user: userId }).populate('items.product');
+    return NextResponse.json(updatedCart, { status: 200 });
+
+  } catch (error) {
+    console.error("Cart PATCH error:", error);
+    return NextResponse.json({ message: "Server Error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !(session.user as any).id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = (session.user as any).id;
+    const { searchParams } = new URL(request.url);
+    const productId = searchParams.get('productId');
+    const clear = searchParams.get('clear');
+
+    await connectDB();
+
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) {
+      return NextResponse.json({ message: "Cart not found" }, { status: 404 });
+    }
+
+    if (clear === 'true') {
+      cart.items = [];
+      await cart.save();
+      return NextResponse.json(cart, { status: 200 });
+    }
+
+    if (!productId) {
+      return NextResponse.json({ message: "productId is required" }, { status: 400 });
+    }
+
+    cart.items = cart.items.filter(
+      (item: any) => item.product.toString() !== productId
+    );
+
+    await cart.save();
+
+    const updatedCart = await Cart.findOne({ user: userId }).populate('items.product');
+    return NextResponse.json(updatedCart, { status: 200 });
+
+  } catch (error) {
+    console.error("Cart DELETE error:", error);
+    return NextResponse.json({ message: "Server Error" }, { status: 500 });
+  }
+}
