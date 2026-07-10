@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ShoppingCart, User, Search, Heart, LayoutDashboard, Menu, X } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { signOut, useSession } from 'next-auth/react';
@@ -17,6 +17,20 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
   const router = useRouter();
 
   const isAdmin = session?.user?.role === 'admin';
+
+  const badgeCount = useCartStore((s) => s.cartBadgeCount);
+  const setCartBadgeCount = useCartStore((s) => s.setCartBadgeCount);
+  const hydrated = useRef(false);
+
+  // Hydrate the reactive badge from the server-computed count on first load only.
+  // After that, the badge is driven purely by client-side updates from
+  // AddToCartButton / cart page actions, so it's never stuck stale.
+  useEffect(() => {
+    if (!hydrated.current) {
+      setCartBadgeCount(cartCount);
+      hydrated.current = true;
+    }
+  }, [cartCount, setCartBadgeCount]);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -105,9 +119,9 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
 
             <Link href="/cart" className="relative text-slate-600 hover:text-slate-900 transition-colors">
               <ShoppingCart className="w-5 h-5" />
-              {cartCount > 0 && (
+              {badgeCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
-                  {cartCount}
+                  {badgeCount}
                 </span>
               )}
             </Link>
@@ -134,31 +148,27 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
 
         </div>
 
-        {/* --- UPDATED RESPONSIVE SEARCH BAR --- */}
+        {/* Expandable search bar */}
         {searchOpen && (
-          <div className="pb-4 w-full">
-            <form onSubmit={handleSearch} className="flex gap-2 w-full">
+          <div className="pb-4">
+            <form onSubmit={handleSearch} className="flex gap-2">
               <input
                 type="text"
                 autoFocus
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search products..."
-                // Added min-w-0 to prevent flexbox overflow on micro screens
-                // Scaled down padding slightly for mobile
-                className="flex-1 min-w-0 px-3 sm:px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none text-sm text-slate-900"
+                className="flex-1 px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none text-sm text-slate-900"
               />
               <button
                 type="submit"
-                // Added flex-shrink-0 to ensure the button never squishes
-                className="flex-shrink-0 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors"
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors"
               >
                 Search
               </button>
             </form>
           </div>
         )}
-        {/* ------------------------------------- */}
       </div>
 
       {/* Mobile menu */}

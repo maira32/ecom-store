@@ -1,5 +1,6 @@
 import { connectDB } from '@/lib/mongodb';
 import Product from '@/models/Product';
+import Order from '@/models/Order';
 import { DollarSign, Package, Clock3 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -8,11 +9,18 @@ export default async function AdminDashboard() {
 
   await connectDB();
   const productCount = await Product.countDocuments();
+  const pendingOrdersCount = await Order.countDocuments({ status: 'pending' });
+
+  const revenueAgg = await Order.aggregate([
+    { $match: { status: { $ne: 'cancelled' } } },
+    { $group: { _id: null, total: { $sum: '$total' } } },
+  ]);
+  const totalRevenue = revenueAgg[0]?.total || 0;
 
   const stats = [
-    { label: 'Total Revenue', value: '$0.00', icon: DollarSign },
+    { label: 'Total Revenue', value: `$${totalRevenue.toFixed(2)}`, icon: DollarSign },
     { label: 'Active Products', value: productCount, icon: Package },
-    { label: 'Pending Orders', value: 0, icon: Clock3 },
+    { label: 'Pending Orders', value: pendingOrdersCount, icon: Clock3 },
   ];
 
   return (

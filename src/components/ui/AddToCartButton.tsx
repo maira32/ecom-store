@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ShoppingCart } from 'lucide-react';
+import { useCartStore } from '@/lib/store';
 
 interface AddToCartProps {
   product: {
@@ -17,6 +18,7 @@ export default function AddToCartButton({ product }: AddToCartProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const incrementCartBadge = useCartStore((s) => s.incrementCartBadge);
 
   const handleAddToCart = async () => {
     if (!session) {
@@ -43,9 +45,8 @@ export default function AddToCartButton({ product }: AddToCartProps) {
         throw new Error('Failed to add item to cart');
       }
 
+      incrementCartBadge(1);
       alert(`${product.name} added to your cart!`);
-      
-      router.refresh(); 
 
     } catch (error) {
       console.error(error);

@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Trash2, Minus, Plus, Loader2, ShoppingBag } from 'lucide-react';
+import { useCartStore } from '@/lib/store';
 
 interface CartItem {
   _id: string;
@@ -25,6 +26,8 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
+  const incrementCartBadge = useCartStore((s) => s.incrementCartBadge);
+  const setCartBadgeCount = useCartStore((s) => s.setCartBadgeCount);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -51,6 +54,9 @@ export default function CartPage() {
     if (newQuantity < 1) return;
     setUpdatingId(productId);
 
+    const previousItem = items.find((item) => item.product._id === productId);
+    const delta = previousItem ? newQuantity - previousItem.quantity : 0;
+
     // optimistic update
     setItems((prev) =>
       prev.map((item) =>
@@ -65,7 +71,7 @@ export default function CartPage() {
         body: JSON.stringify({ productId, quantity: newQuantity }),
       });
       if (!res.ok) throw new Error('Failed to update quantity');
-      router.refresh();
+      incrementCartBadge(delta);
     } catch (err) {
       console.error(err);
       fetchCart(); // revert to server state on failure
@@ -76,11 +82,13 @@ export default function CartPage() {
 
   const removeItem = async (productId: string) => {
     setUpdatingId(productId);
+    const removedItem = items.find((item) => item.product._id === productId);
+
     try {
       const res = await fetch(`/api/cart?productId=${productId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to remove item');
       setItems((prev) => prev.filter((item) => item.product._id !== productId));
-      router.refresh();
+      if (removedItem) incrementCartBadge(-removedItem.quantity);
     } catch (err) {
       console.error(err);
       alert('Failed to remove item. Please try again.');
@@ -100,7 +108,7 @@ export default function CartPage() {
       const res = await fetch('/api/orders', { method: 'POST' });
       if (!res.ok) throw new Error('Checkout failed');
       const order = await res.json();
-      router.refresh();
+      setCartBadgeCount(0);
       router.push(`/order-confirmation?orderId=${order._id}`);
     } catch (err) {
       console.error(err);

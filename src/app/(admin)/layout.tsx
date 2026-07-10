@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Package,
   Tags,
+  Receipt,
   ArrowLeft,
   Menu,
   X,
@@ -17,6 +18,7 @@ const navItems = [
   { name: 'Dashboard Overview', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Products', href: '/dashboard/products', icon: Package },
   { name: 'Categories', href: '/dashboard/categories', icon: Tags },
+  { name: 'Orders', href: '/dashboard/orders', icon: Receipt },
   { name: 'Messages', href: '/dashboard/messages', icon: Mail },
 ];
 
@@ -31,6 +33,7 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen bg-[#d6d3d3]">
 
+      {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-[#cfcccc] border-b border-black/10 px-4 h-14 flex items-center justify-between">
         <h2 className="text-lg font-bold tracking-tight text-slate-900">Admin Panel</h2>
         <button
@@ -42,6 +45,7 @@ export default function AdminLayout({
         </button>
       </div>
 
+      {/* Mobile backdrop */}
       {mobileOpen && (
         <div
           className="md:hidden fixed inset-0 bg-black/40 z-40"
@@ -49,6 +53,7 @@ export default function AdminLayout({
         />
       )}
 
+      {/* Sidebar — static on desktop, slide-in drawer on mobile */}
       <aside
         className={`
           bg-[#cfcccc] text-slate-900 p-6 flex flex-col w-64 flex-shrink-0

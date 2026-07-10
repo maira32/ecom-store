@@ -20,6 +20,14 @@ interface StoreState {
   wishlist: ProductItem[];
   toggleWishlist: (item: ProductItem) => void;
   isInWishlist: (id: string) => boolean;
+
+  // Reactive badge count for the navbar cart icon.
+  // Kept separate from server-fetched counts because Next.js's route
+  // cache can serve a stale layout after navigation, causing the badge
+  // to lag behind real cart state. This updates instantly and locally.
+  cartBadgeCount: number;
+  setCartBadgeCount: (n: number) => void;
+  incrementCartBadge: (by: number) => void;
 }
 
 export const useCartStore = create<StoreState>((set, get) => ({
@@ -53,4 +61,9 @@ export const useCartStore = create<StoreState>((set, get) => ({
     });
   },
   isInWishlist: (id) => get().wishlist.some((item) => item.id === id),
+
+  cartBadgeCount: 0,
+  setCartBadgeCount: (n) => set({ cartBadgeCount: Math.max(0, n) }),
+  incrementCartBadge: (by) =>
+    set((state) => ({ cartBadgeCount: Math.max(0, state.cartBadgeCount + by) })),
 }));
