@@ -12,15 +12,21 @@ export default async function UserLayout({ children }: { children: React.ReactNo
   if (session && (session.user as any).id) {
     try {
       await connectDB();
-      const cart = await Cart.findOne({ user: (session.user as any).id });
+      
+      // 1. UPDATED: Added .populate('items.product') to fetch the actual product data
+      const cart = await Cart.findOne({ user: (session.user as any).id }).populate('items.product');
+      
       if (cart) {
-        cartCount = cart.items.reduce((total: number, item: any) => total + item.quantity, 0);
+        // 2. NEW: Filter out any items where the product was deleted from the database
+        const validItems = cart.items.filter((item: any) => item.product != null);
+        
+        // 3. UPDATED: Calculate the count using ONLY the valid items
+        cartCount = validItems.reduce((total: number, item: any) => total + item.quantity, 0);
       }
     } catch (error) {
       console.error("Error fetching cart count:", error);
     }
   }
-
 
   return (
     <div className="flex flex-col min-h-screen">

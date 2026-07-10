@@ -23,24 +23,34 @@ export default async function CartPage() {
   
   const cart = await Cart.findOne({ user: (session.user as any).id }).populate('items.product');
 
-  const cartTotal = cart?.items.reduce((total: number, item: any) => {
+  // 1. SAFETY NET: Filter out any items where the product was deleted from the database
+  const validItems = cart?.items.filter((item: any) => item.product != null) || [];
+
+  // 2. Calculate the total using ONLY the valid items
+  const cartTotal = validItems.reduce((total: number, item: any) => {
     return total + (item.product.price * item.quantity);
-  }, 0) || 0;
+  }, 0);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-16">
       <h1 className="text-3xl font-extrabold text-slate-900 mb-10">Shopping Cart</h1>
       
-      {!cart || cart.items.length === 0 ? (
+      {/* 3. Check validItems.length instead of cart.items.length */}
+      {!cart || validItems.length === 0 ? (
         <p className="text-slate-600">Your cart is currently empty.</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           
           <div className="lg:col-span-2 space-y-6">
-            {cart.items.map((item: any) => (
+            {/* 4. Map over the validItems array here */}
+            {validItems.map((item: any) => (
               <div key={item._id.toString()} className="flex items-center gap-6 p-4 border border-slate-100 rounded-2xl bg-white shadow-sm">
                 <div className="w-24 h-24 bg-slate-50 rounded-xl overflow-hidden relative">
-                  <img src={item.product.imageUrl} alt={item.product.name} className="object-cover w-full h-full" />
+                  <img 
+                    src={item.product.imageUrl || `https://picsum.photos/seed/${item.product.name.replace(/\s+/g, '')}/600/600`} 
+                    alt={item.product.name} 
+                    className="object-cover w-full h-full" 
+                  />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-slate-900">{item.product.name}</h3>
