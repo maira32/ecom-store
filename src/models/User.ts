@@ -18,8 +18,11 @@ const UserSchema: Schema = new Schema({
   },
   password: { 
     type: String, 
-    select: false 
+    select: false,
   },
+
+  resetPasswordToken: { type: String, select: false },
+  resetPasswordExpires: { type: Date, select: false },
   
   role: { 
     type: String, 

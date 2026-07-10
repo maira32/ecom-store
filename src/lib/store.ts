@@ -21,10 +21,6 @@ interface StoreState {
   toggleWishlist: (item: ProductItem) => void;
   isInWishlist: (id: string) => boolean;
 
-  // Reactive badge count for the navbar cart icon.
-  // Kept separate from server-fetched counts because Next.js's route
-  // cache can serve a stale layout after navigation, causing the badge
-  // to lag behind real cart state. This updates instantly and locally.
   cartBadgeCount: number;
   setCartBadgeCount: (n: number) => void;
   incrementCartBadge: (by: number) => void;
