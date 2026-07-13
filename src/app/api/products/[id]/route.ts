@@ -6,7 +6,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     await connectDB();
-    const product = await Product.findById(id);
+    
+    const product = await Product.findById(id).lean();
+    
     if (!product) {
       return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
     }
@@ -22,7 +24,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const body = await request.json();
     await connectDB();
-    const updated = await Product.findByIdAndUpdate(id, body, { new: true, runValidators: true });
+    
+    const updated = await Product.findByIdAndUpdate(id, body, { new: true, runValidators: true }).lean();
+    
     if (!updated) {
       return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
     }
@@ -37,7 +41,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { id } = await params;
     await connectDB();
-    const deleted = await Product.findByIdAndDelete(id);
+    
+    const deleted = await Product.findByIdAndDelete(id).lean();
+    
     if (!deleted) {
       return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
     }

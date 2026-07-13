@@ -5,7 +5,8 @@ import Product from '@/models/Product';
 export async function GET() {
   try {
     await connectDB();
-    const products = await Product.find({}).sort({ createdAt: -1 }); 
+    
+    const products = await Product.find({}).sort({ createdAt: -1 }).lean(); 
     
     return NextResponse.json({ success: true, data: products }, { status: 200 });
   } catch (error) {

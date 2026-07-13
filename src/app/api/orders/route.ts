@@ -13,7 +13,9 @@ export async function GET() {
     }
 
     await connectDB();
-    const orders = await Order.find({ user: (session.user as any).id }).sort({ createdAt: -1 });
+    const orders = await Order.find({ user: (session.user as any).id })
+      .sort({ createdAt: -1 })
+      .lean();
 
     return NextResponse.json({ success: true, data: orders }, { status: 200 });
   } catch (error) {
@@ -32,9 +34,13 @@ export async function POST() {
     const userId = (session.user as any).id;
     await connectDB();
 
-    const cart = await Cart.findOne({ user: userId }).populate('items.product');
-    const validItems = (cart?.items || []).filter((item: any) => item.product != null);
+    const cart = await Cart.findOne({ user: userId }).populate('items.product').lean();
+    
+    if (!cart || !cart.items || cart.items.length === 0) {
+      return NextResponse.json({ message: "Cart is empty" }, { status: 400 });
+    }
 
+    const validItems = (cart.items as any).filter((item: any) => item.product != null);
     if (validItems.length === 0) {
       return NextResponse.json({ message: "Cart is empty" }, { status: 400 });
     }
@@ -46,10 +52,7 @@ export async function POST() {
       quantity: item.quantity,
     }));
 
-    const total = orderItems.reduce(
-      (sum: number, item: any) => sum + item.price * item.quantity,
-      0
-    );
+    const total = orderItems.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0);
 
     const order = await Order.create({
       user: userId,
@@ -58,8 +61,7 @@ export async function POST() {
       status: 'pending',
     });
 
-    cart.items = [];
-    await cart.save();
+    await Cart.updateOne({ user: userId }, { $set: { items: [] } });
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {

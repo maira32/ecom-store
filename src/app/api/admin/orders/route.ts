@@ -13,9 +13,11 @@ export async function GET() {
     }
 
     await connectDB();
+    
     const orders = await Order.find({})
       .populate('user', 'name email')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     return NextResponse.json({ success: true, data: orders }, { status: 200 });
   } catch (error) {

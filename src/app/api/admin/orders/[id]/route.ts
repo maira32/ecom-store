@@ -22,7 +22,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
 
     await connectDB();
-    const updated = await Order.findByIdAndUpdate(id, { status }, { new: true });
+    
+    const updated = await Order.findByIdAndUpdate(
+      id, 
+      { status }, 
+      { new: true }
+    ).lean();
 
     if (!updated) {
       return NextResponse.json({ success: false, message: "Order not found" }, { status: 404 });

@@ -7,13 +7,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { id } = await params;
     await connectDB();
-
-    const category = await Category.findById(id);
+    const category = await Category.findById(id).select('name').lean();
+    
     if (!category) {
       return NextResponse.json({ success: false, message: "Category not found" }, { status: 404 });
     }
 
-   
     const productCount = await Product.countDocuments({ category: category.name });
 
     if (productCount > 0) {
@@ -26,7 +25,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       );
     }
 
-    const deleted = await Category.findByIdAndDelete(id);
+    const deleted = await Category.findByIdAndDelete(id).lean();
     return NextResponse.json({ success: true, data: deleted }, { status: 200 });
   } catch (error) {
     console.error("Error deleting category:", error);

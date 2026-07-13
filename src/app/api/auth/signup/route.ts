@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     await connectDB();
 
-    const existingUser = await User.findOne({ email });
+const existingUser = await User.exists({ email });
     if (existingUser) {
       return NextResponse.json({ message: "An account with this email already exists." }, { status: 409 });
     }

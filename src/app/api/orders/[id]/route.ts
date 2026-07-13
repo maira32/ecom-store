@@ -14,7 +14,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     await connectDB();
 
-    const order = await Order.findById(id);
+    const order = await Order.findById(id).lean();
+    
     if (!order) {
       return NextResponse.json({ message: "Order not found" }, { status: 404 });
     }
