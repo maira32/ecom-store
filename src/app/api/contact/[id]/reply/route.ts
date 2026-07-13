@@ -21,7 +21,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     await connectDB();
     
-    // OPTIMIZATION: One trip to the DB. Find it, update 'isRead', select only needed fields, and lean it.
     const message = await Message.findByIdAndUpdate(
       id,
       { isRead: true }
@@ -31,7 +30,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ success: false, message: "Message not found" }, { status: 404 });
     }
 
-    // Now we send the email using the lightweight data we just grabbed
     await sendContactReplyEmail(message.email, message.fullName, message.message, reply.trim());
 
     return NextResponse.json({ success: true }, { status: 200 });
