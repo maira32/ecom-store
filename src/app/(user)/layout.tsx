@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { connectDB } from '@/lib/mongodb';
 import Cart from '@/models/Cart';
+import { Toaster } from 'react-hot-toast';
 
 export default async function UserLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -13,14 +14,11 @@ export default async function UserLayout({ children }: { children: React.ReactNo
     try {
       await connectDB();
       
-      // 1. UPDATED: Added .populate('items.product') to fetch the actual product data
       const cart = await Cart.findOne({ user: (session.user as any).id }).populate('items.product');
       
       if (cart) {
-        // 2. NEW: Filter out any items where the product was deleted from the database
         const validItems = cart.items.filter((item: any) => item.product != null);
         
-        // 3. UPDATED: Calculate the count using ONLY the valid items
         cartCount = validItems.reduce((total: number, item: any) => total + item.quantity, 0);
       }
     } catch (error) {
@@ -31,6 +29,7 @@ export default async function UserLayout({ children }: { children: React.ReactNo
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar cartCount={cartCount} />
+      <Toaster position="bottom-right" />
       <main className="flex-grow">
         {children}
       </main>
