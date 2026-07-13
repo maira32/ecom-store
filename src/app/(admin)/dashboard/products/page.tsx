@@ -2,8 +2,9 @@
 
 import { Plus, Edit, Trash2, Loader2, Package } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast'; // <-- 1. Added toast import
+import { useEffect, useMemo, useState } from 'react';
+import AdminPagination from '@/components/ui/AdminPagination';
+import toast from 'react-hot-toast';
 
 interface Product {
   _id: string;
@@ -18,8 +19,10 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   
-  // 2. Added state to track which product the modal should display
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     fetchProducts();
@@ -37,18 +40,16 @@ export default function AdminProductsPage() {
     }
   };
 
-  // 3. Split the logic: This opens the modal
   const promptDelete = (product: Product) => {
     setProductToDelete(product);
   };
 
-  // 4. Split the logic: This executes the delete when "Yes" is clicked
   const executeDelete = async () => {
     if (!productToDelete) return;
 
     const id = productToDelete._id;
     setDeletingId(id);
-    setProductToDelete(null); // Instantly hide the modal
+    setProductToDelete(null); 
 
     try {
       const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
@@ -56,16 +57,29 @@ export default function AdminProductsPage() {
       
       if (data.success) {
         setProducts((prev) => prev.filter((p) => p._id !== id));
-        toast.success('Product deleted successfully!'); // <-- Replaced alert
+        toast.success('Product deleted successfully!'); 
       } else {
-        toast.error(data.message || 'Failed to delete product'); // <-- Replaced alert
+        toast.error(data.message || 'Failed to delete product'); 
       }
     } catch (err) {
       console.error('Delete failed:', err);
-      toast.error('Something went wrong'); // <-- Replaced alert
+      toast.error('Something went wrong'); 
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return products.slice(start, start + pageSize);
+  }, [products, safePage, pageSize]);
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setPage(1);
   };
 
   if (loading) {
@@ -117,7 +131,7 @@ export default function AdminProductsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">
-                  {products.map((product) => (
+                  {paginatedProducts.map((product) => (
                     <tr key={product._id} className="hover:bg-slate-50 transition-colors">
                       <td className="whitespace-nowrap px-6 py-4">
                         <div className="font-medium text-slate-900">{product.name}</div>
@@ -140,7 +154,6 @@ export default function AdminProductsPage() {
                             <Edit className="h-5 w-5" />
                           </Link>
                           
-                          {/* 5. Updated onClick to trigger promptDelete */}
                           <button
                             onClick={() => promptDelete(product)}
                             disabled={deletingId === product._id}
@@ -159,11 +172,19 @@ export default function AdminProductsPage() {
                 </tbody>
               </table>
             </div>
+
+            <AdminPagination
+              currentPage={safePage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={products.length}
+              onPageChange={setPage}
+              onPageSizeChange={handlePageSizeChange}
+            />
           </div>
         </>
       )}
 
-      {/* 6. --- CUSTOM DELETE CONFIRMATION MODAL --- */}
       {productToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl border border-slate-100">
@@ -188,7 +209,6 @@ export default function AdminProductsPage() {
           </div>
         </div>
       )}
-      {/* ------------------------------------------- */}
 
     </div>
   );

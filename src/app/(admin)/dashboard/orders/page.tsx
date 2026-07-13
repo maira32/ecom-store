@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Receipt } from 'lucide-react';
+import AdminPagination from '@/components/ui/AdminPagination';
+import toast from 'react-hot-toast';
 
 interface OrderItem {
   name: string;
@@ -30,6 +32,9 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -55,19 +60,34 @@ export default function AdminOrdersPage() {
         body: JSON.stringify({ status: newStatus }),
       });
       const data = await res.json();
+      
       if (data.success) {
         setOrders((prev) =>
           prev.map((o) => (o._id === orderId ? { ...o, status: newStatus as Order['status'] } : o))
         );
+        toast.success('Order status updated!'); 
       } else {
-        alert('Failed to update order status');
+        toast.error(data.message || 'Failed to update order status');
       }
     } catch (err) {
       console.error('Status update failed:', err);
-      alert('Something went wrong');
+      toast.error('Something went wrong'); 
     } finally {
       setUpdatingId(null);
     }
+  };
+
+  const totalPages = Math.max(1, Math.ceil(orders.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+
+  const paginatedOrders = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return orders.slice(start, start + pageSize);
+  }, [orders, safePage, pageSize]);
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setPage(1);
   };
 
   if (loading) {
@@ -110,7 +130,7 @@ export default function AdminOrdersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white">
-                  {orders.map((order) => (
+                  {paginatedOrders.map((order) => (
                     <tr key={order._id} className="hover:bg-slate-50 transition-colors">
                       <td className="whitespace-nowrap px-6 py-4 text-xs font-mono text-slate-600">
                         {order._id.slice(-8)}
@@ -146,6 +166,15 @@ export default function AdminOrdersPage() {
                 </tbody>
               </table>
             </div>
+
+            <AdminPagination
+              currentPage={safePage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={orders.length}
+              onPageChange={setPage}
+              onPageSizeChange={handlePageSizeChange}
+            />
           </div>
         </>
       )}

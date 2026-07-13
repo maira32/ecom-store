@@ -1,8 +1,9 @@
 'use client';
 
 import { Plus, Trash2, Loader2, Tags } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import { useEffect, useMemo, useState } from 'react';
+import AdminPagination from '@/components/ui/AdminPagination';
+import toast from 'react-hot-toast'; 
 
 interface Category {
   _id: string;
@@ -16,7 +17,11 @@ export default function AdminCategoriesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState('');
+
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     fetchCategories();
@@ -51,13 +56,15 @@ export default function AdminCategoriesPage() {
       if (data.success) {
         setCategories((prev) => [...prev, data.data]);
         setNewCategoryName('');
-        toast.success('Category created!');
+        toast.success('Category created successfully!'); 
       } else {
         setError(data.message || 'Failed to add category');
+        toast.error(data.message || 'Failed to add category'); 
       }
     } catch (err) {
       console.error('Add category failed:', err);
       setError('Something went wrong');
+      toast.error('Something went wrong');
     } finally {
       setSubmitting(false);
     }
@@ -91,6 +98,20 @@ export default function AdminCategoriesPage() {
       setDeletingId(null);
     }
   };
+
+  const totalPages = Math.max(1, Math.ceil(categories.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+
+  const paginatedCategories = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return categories.slice(start, start + pageSize);
+  }, [categories, safePage, pageSize]);
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setPage(1);
+  };
+
   return (
     <div className="max-w-4xl">
       <div className="mb-6">
@@ -148,15 +169,15 @@ export default function AdminCategoriesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {categories.map((cat) => (
+                  {paginatedCategories.map((cat) => (
                     <tr key={cat._id} className="hover:bg-slate-50">
                       <td className="px-6 py-4 font-medium text-slate-900">{cat.name}</td>
                       <td className="px-6 py-4 text-right">
-<button
-  onClick={() => promptDelete(cat)}
-  disabled={deletingId === cat._id}
-  className="text-slate-600 hover:text-red-600 transition-colors disabled:opacity-50"
->
+                        <button
+                          onClick={() => promptDelete(cat)}
+                          disabled={deletingId === cat._id}
+                          className="text-slate-600 hover:text-red-600 transition-colors disabled:opacity-50"
+                        >
                           {deletingId === cat._id ? (
                             <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
@@ -168,10 +189,20 @@ export default function AdminCategoriesPage() {
                   ))}
                 </tbody>
               </table>
+
+              <AdminPagination
+                currentPage={safePage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={categories.length}
+                onPageChange={setPage}
+                onPageSizeChange={handlePageSizeChange}
+              />
             </div>
           )}
         </div>
       </div>
+
       {categoryToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl border border-slate-100">
@@ -196,8 +227,7 @@ export default function AdminCategoriesPage() {
           </div>
         </div>
       )}
-      
-    </div> 
+
+    </div>
   );
 }
-  
