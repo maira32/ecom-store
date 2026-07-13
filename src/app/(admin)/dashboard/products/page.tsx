@@ -3,6 +3,7 @@
 import { Plus, Edit, Trash2, Loader2, Package } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast'; // <-- 1. Added toast import
 
 interface Product {
   _id: string;
@@ -16,6 +17,9 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  // 2. Added state to track which product the modal should display
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -33,21 +37,32 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this product? This cannot be undone.')) return;
+  // 3. Split the logic: This opens the modal
+  const promptDelete = (product: Product) => {
+    setProductToDelete(product);
+  };
 
+  // 4. Split the logic: This executes the delete when "Yes" is clicked
+  const executeDelete = async () => {
+    if (!productToDelete) return;
+
+    const id = productToDelete._id;
     setDeletingId(id);
+    setProductToDelete(null); // Instantly hide the modal
+
     try {
       const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
       const data = await res.json();
+      
       if (data.success) {
         setProducts((prev) => prev.filter((p) => p._id !== id));
+        toast.success('Product deleted successfully!'); // <-- Replaced alert
       } else {
-        alert('Failed to delete product');
+        toast.error(data.message || 'Failed to delete product'); // <-- Replaced alert
       }
     } catch (err) {
       console.error('Delete failed:', err);
-      alert('Something went wrong');
+      toast.error('Something went wrong'); // <-- Replaced alert
     } finally {
       setDeletingId(null);
     }
@@ -124,8 +139,10 @@ export default function AdminProductsPage() {
                           >
                             <Edit className="h-5 w-5" />
                           </Link>
+                          
+                          {/* 5. Updated onClick to trigger promptDelete */}
                           <button
-                            onClick={() => handleDelete(product._id)}
+                            onClick={() => promptDelete(product)}
                             disabled={deletingId === product._id}
                             className="text-slate-600 hover:text-red-600 transition-colors disabled:opacity-50"
                           >
@@ -145,6 +162,34 @@ export default function AdminProductsPage() {
           </div>
         </>
       )}
+
+      {/* 6. --- CUSTOM DELETE CONFIRMATION MODAL --- */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl border border-slate-100">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Delete Product?</h3>
+            <p className="text-slate-600 mb-6">
+              Are you sure you want to delete <strong>"{productToDelete.name}"</strong>? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => setProductToDelete(null)}
+                className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={executeDelete}
+                className="px-4 py-2 bg-red-600 text-white font-medium hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ------------------------------------------- */}
+
     </div>
   );
 }

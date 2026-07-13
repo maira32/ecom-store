@@ -2,6 +2,7 @@
 
 import { Plus, Trash2, Loader2, Tags } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 
 interface Category {
   _id: string;
@@ -15,6 +16,7 @@ export default function AdminCategoriesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -49,6 +51,7 @@ export default function AdminCategoriesPage() {
       if (data.success) {
         setCategories((prev) => [...prev, data.data]);
         setNewCategoryName('');
+        toast.success('Category created!');
       } else {
         setError(data.message || 'Failed to add category');
       }
@@ -60,26 +63,34 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  const handleDeleteCategory = async (id: string) => {
-    if (!confirm('Delete this category?')) return;
+  const promptDelete = (category: Category) => {
+    setCategoryToDelete(category);
+  };
 
+  const executeDelete = async () => {
+    if (!categoryToDelete) return;
+    
+    const id = categoryToDelete._id;
     setDeletingId(id);
+    setCategoryToDelete(null);
+    
     try {
       const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
       const data = await res.json();
+      
       if (data.success) {
         setCategories((prev) => prev.filter((cat) => cat._id !== id));
+        toast.success('Category deleted successfully!'); 
       } else {
-        alert('Failed to delete category');
+        toast.error(data.message || 'Failed to delete category'); 
       }
     } catch (err) {
       console.error('Delete failed:', err);
-      alert('Something went wrong');
+      toast.error('Something went wrong'); 
     } finally {
       setDeletingId(null);
     }
   };
-
   return (
     <div className="max-w-4xl">
       <div className="mb-6">
@@ -141,11 +152,11 @@ export default function AdminCategoriesPage() {
                     <tr key={cat._id} className="hover:bg-slate-50">
                       <td className="px-6 py-4 font-medium text-slate-900">{cat.name}</td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleDeleteCategory(cat._id)}
-                          disabled={deletingId === cat._id}
-                          className="text-slate-600 hover:text-red-600 transition-colors disabled:opacity-50"
-                        >
+<button
+  onClick={() => promptDelete(cat)}
+  disabled={deletingId === cat._id}
+  className="text-slate-600 hover:text-red-600 transition-colors disabled:opacity-50"
+>
                           {deletingId === cat._id ? (
                             <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
@@ -161,6 +172,32 @@ export default function AdminCategoriesPage() {
           )}
         </div>
       </div>
-    </div>
+      {categoryToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl border border-slate-100">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Delete Category?</h3>
+            <p className="text-slate-600 mb-6">
+              Are you sure you want to delete <strong>"{categoryToDelete.name}"</strong>? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => setCategoryToDelete(null)}
+                className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={executeDelete}
+                className="px-4 py-2 bg-red-600 text-white font-medium hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+    </div> 
   );
 }
+  

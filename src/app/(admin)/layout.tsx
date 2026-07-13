@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Toaster } from 'react-hot-toast';
 import { useState } from 'react';
 import {
   LayoutDashboard,
@@ -104,6 +105,8 @@ export default function AdminLayout({
           </Link>
         </div>
       </aside>
+      
+<Toaster position="bottom-right" />
 
       <main className="flex-1 p-4 pt-20 md:p-8 md:pt-8 overflow-y-auto h-screen w-full min-w-0">
         {children}

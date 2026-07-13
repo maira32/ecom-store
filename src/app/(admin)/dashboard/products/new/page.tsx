@@ -1,6 +1,7 @@
 import ProductForm from "@/components/admin/ProductForm";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import toast from 'react-hot-toast';
 
 export default function NewProductPage() {
   return (
