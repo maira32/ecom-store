@@ -33,3 +33,33 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
     `,
   });
 }
+
+export async function sendContactReplyEmail(
+  to: string,
+  customerName: string,
+  originalMessage: string,
+  replyText: string
+) {
+  await transporter.sendMail({
+    from: `LuxeLane Support <${process.env.GMAIL_USER}>`,
+    to,
+    subject: 'Re: Your message to LuxeLane',
+    html: `
+      <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; color: #0f172a;">
+        <p>Hi ${customerName},</p>
+        <p style="white-space: pre-wrap; color: #1e293b;">${replyText}</p>
+
+        <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+          <p style="color: #94a3b8; font-size: 13px; margin-bottom: 8px;">Your original message:</p>
+          <p style="color: #64748b; font-size: 13px; white-space: pre-wrap; background: #f8fafc; padding: 12px; border-radius: 8px;">
+            ${originalMessage}
+          </p>
+        </div>
+
+        <p style="color: #94a3b8; font-size: 13px; margin-top: 24px;">
+          — LuxeLane Support
+        </p>
+      </div>
+    `,
+  });
+}

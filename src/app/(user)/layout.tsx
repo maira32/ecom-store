@@ -29,7 +29,7 @@ export default async function UserLayout({ children }: { children: React.ReactNo
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar cartCount={cartCount} />
-      <Toaster position="bottom-right" />
+      <Toaster position="top-right" />
       <main className="flex-grow">
         {children}
       </main>
