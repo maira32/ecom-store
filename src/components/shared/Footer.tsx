@@ -28,23 +28,21 @@ export default function Footer() {
             <h3 className="font-semibold text-slate-900 mb-4">Support</h3>
             <ul className="space-y-3">
               <li><Link href="/contact" className="text-slate-500 hover:text-slate-900 transition-colors">Contact Us</Link></li>
-              <li><span className="text-slate-500 hover:text-slate-900 transition-colors cursor-pointer">FAQs</span></li>
-             
             </ul>
           </div>
 
           <div>
             <h3 className="font-semibold text-slate-900 mb-4">Legal</h3>
             <ul className="space-y-3">
-              <li><span className="text-slate-500 hover:text-slate-900 transition-colors cursor-pointer">Privacy Policy</span></li>
-              <li><span className="text-slate-500 hover:text-slate-900 transition-colors cursor-pointer">Terms of Service</span></li>
+              <li><Link href="/privacy" className="text-slate-500 hover:text-slate-900 transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/terms" className="text-slate-500 hover:text-slate-900 transition-colors">Terms of Service</Link></li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-slate-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-slate-700">
-            © {new Date().getFullYear()} STORE. All rights reserved.
+            © {new Date().getFullYear()} LuxeLane. All rights reserved.
           </p>
         </div>
       </div>

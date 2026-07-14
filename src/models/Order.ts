@@ -12,6 +12,8 @@ export interface IOrder extends Document {
   items: IOrderItem[];
   total: number;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  stripeSessionId?: string;
+  paymentStatus: 'unpaid' | 'paid';
   createdAt: Date;
 }
 
@@ -33,6 +35,12 @@ const OrderSchema = new Schema<IOrder>({
     type: String,
     enum: ['pending', 'processing', 'completed', 'cancelled'],
     default: 'pending',
+  },
+  stripeSessionId: { type: String, unique: true, sparse: true },
+  paymentStatus: {
+    type: String,
+    enum: ['unpaid', 'paid'],
+    default: 'unpaid',
   },
   createdAt: { type: Date, default: Date.now },
 });

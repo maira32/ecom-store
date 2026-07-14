@@ -27,7 +27,6 @@ export default function CartPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const incrementCartBadge = useCartStore((s) => s.incrementCartBadge);
-  const setCartBadgeCount = useCartStore((s) => s.setCartBadgeCount);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -57,7 +56,6 @@ export default function CartPage() {
     const previousItem = items.find((item) => item.product._id === productId);
     const delta = previousItem ? newQuantity - previousItem.quantity : 0;
 
-    // optimistic update
     setItems((prev) =>
       prev.map((item) =>
         item.product._id === productId ? { ...item, quantity: newQuantity } : item
@@ -74,7 +72,7 @@ export default function CartPage() {
       incrementCartBadge(delta);
     } catch (err) {
       console.error(err);
-      fetchCart(); // revert to server state on failure
+      fetchCart();
     } finally {
       setUpdatingId(null);
     }
@@ -105,14 +103,17 @@ export default function CartPage() {
   const handleCheckout = async () => {
     setCheckingOut(true);
     try {
-      const res = await fetch('/api/orders', { method: 'POST' });
-      if (!res.ok) throw new Error('Checkout failed');
-      const order = await res.json();
-      setCartBadgeCount(0);
-      router.push(`/order-confirmation?orderId=${order._id}`);
+      const res = await fetch('/api/checkout', { method: 'POST' });
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+        throw new Error(data.message || 'Checkout failed');
+      }
+
+      window.location.href = data.url;
     } catch (err) {
       console.error(err);
-      alert('Something went wrong during checkout. Please try again.');
+      alert('Something went wrong starting checkout. Please try again.');
       setCheckingOut(false);
     }
   };
@@ -233,7 +234,7 @@ export default function CartPage() {
               className="w-full py-4 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {checkingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              {checkingOut ? 'Placing order...' : 'Proceed to Checkout'}
+              {checkingOut ? 'Redirecting to payment...' : 'Proceed to Checkout'}
             </button>
           </div>
 
