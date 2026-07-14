@@ -5,6 +5,8 @@ import { connectDB } from '@/lib/mongodb';
 import Cart from '@/models/Cart';
 import Product from '@/models/Product'; 
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
