@@ -14,19 +14,38 @@ interface Product {
   category: string;
 }
 
+const PAGE_KEY = 'admin-products-page';
+const PAGE_SIZE_KEY = 'admin-products-page-size';
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  
+
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(() => {
+    if (typeof window === 'undefined') return 1;
+    const saved = sessionStorage.getItem(PAGE_KEY);
+    return saved ? parseInt(saved, 10) || 1 : 1;
+  });
+  const [pageSize, setPageSize] = useState(() => {
+    if (typeof window === 'undefined') return 10;
+    const saved = sessionStorage.getItem(PAGE_SIZE_KEY);
+    return saved ? parseInt(saved, 10) || 10 : 10;
+  });
 
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem(PAGE_KEY, String(page));
+  }, [page]);
+
+  useEffect(() => {
+    sessionStorage.setItem(PAGE_SIZE_KEY, String(pageSize));
+  }, [pageSize]);
 
   const fetchProducts = async () => {
     try {

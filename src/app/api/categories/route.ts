@@ -21,12 +21,34 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     await connectDB();
-    
-    const newCategory = await Category.create(body);
-    
-    return NextResponse.json({ success: true, data: newCategory }, { status: 201 });
-  } catch (error) {
+
+    const newCategory = await Category.create({
+      name: body.name.trim(),
+    });
+
+    return NextResponse.json(
+      { success: true, data: newCategory },
+      { status: 201 }
+    );
+  } catch (error: any) {
     console.error("Error creating category:", error);
-    return NextResponse.json({ success: false, message: "Failed to create category" }, { status: 500 });
+
+    if (error.code === 11000) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "A category with this name already exists.",
+        },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to create category",
+      },
+      { status: 500 }
+    );
   }
 }

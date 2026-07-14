@@ -58,8 +58,8 @@ export default function AdminCategoriesPage() {
         setNewCategoryName('');
         toast.success('Category created successfully!'); 
       } else {
-        setError(data.message || 'Failed to add category');
-        toast.error(data.message || 'Failed to add category'); 
+        setError(data.message || 'Failed to add category. A category with this name already exists.');
+        toast.error(data.message || 'Failed to add category. A category with this name already exists.'); 
       }
     } catch (err) {
       console.error('Add category failed:', err);
