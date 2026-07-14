@@ -8,7 +8,7 @@ interface ProductCardProps {
   id: string;
   name: string;
   price: number;
-  imageUrl: string;
+  imageUrl?: string;
   category: string;
 }
 
