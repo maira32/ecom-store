@@ -4,8 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { connectDB } from '@/lib/mongodb';
 import Order from '@/models/Order';
-import Cart from '@/models/Cart';
-import { stripe } from '@/lib/stripe';
+import PendingOrderPoller from '@/components/ui/PendingOrderPoller';
 
 interface OrderConfirmationProps {
   searchParams: Promise<{ session_id?: string }>;
@@ -33,54 +32,16 @@ export default async function OrderConfirmationPage({ searchParams }: OrderConfi
   await connectDB();
   const userId = (session.user as any).id;
 
-  const checkoutSession = await stripe.checkout.sessions.retrieve(session_id);
-
-  if (checkoutSession.payment_status !== 'paid') {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-24 text-center">
-        <div className="inline-flex bg-red-50 rounded-full p-4 mb-6">
-          <XCircle className="w-10 h-10 text-red-500" />
-        </div>
-        <h1 className="text-3xl font-extrabold text-slate-900 mb-3">Payment not completed</h1>
-        <p className="text-slate-600 mb-10">This order hasn't been paid for yet.</p>
-        <Link href="/cart" className="inline-block px-6 py-3 bg-slate-900 text-white rounded-xl font-semibold">
-          Back to cart
-        </Link>
-      </div>
-    );
-  }
-
-  let order = await Order.findOne({ stripeSessionId: session_id });
+  
+  const order = await Order.findOne({ stripeSessionId: session_id, user: userId });
 
   if (!order) {
-    const cart = await Cart.findOne({ user: userId }).populate('items.product');
-    const validItems = (cart?.items || []).filter((item: any) => item.product != null);
-
-    const orderItems = validItems.map((item: any) => ({
-      product: item.product._id,
-      name: item.product.name,
-      price: item.product.price,
-      quantity: item.quantity,
-    }));
-
-    const total = orderItems.reduce(
-      (sum: number, item: any) => sum + item.price * item.quantity,
-      0
+   
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 md:py-24">
+        <PendingOrderPoller />
+      </div>
     );
-
-    order = await Order.create({
-      user: userId,
-      items: orderItems,
-      total,
-      status: 'pending',
-      stripeSessionId: session_id,
-      paymentStatus: 'paid',
-    });
-
-    if (cart) {
-      cart.items = [];
-      await cart.save();
-    }
   }
 
   return (
