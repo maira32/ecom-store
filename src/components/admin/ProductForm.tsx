@@ -95,10 +95,17 @@ export default function ProductForm({ productId }: ProductFormProps) {
     e.preventDefault();
     setError('');
 
-    if (!name.trim() || !description.trim() || !price || !stock || !category) {
-      setError('Please fill in all required fields');
-      return;
-    }
+   if (
+  !name.trim() ||
+  !description.trim() ||
+  !price ||
+  !stock ||
+  !category ||
+  !imageUrl
+) {
+  setError('Please fill in all fields.');
+  return;
+}
 
     setSubmitting(true);
     const payload = {
