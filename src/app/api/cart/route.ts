@@ -15,9 +15,7 @@ export async function GET() {
 
     await connectDB();
 
-    const cart = await Cart.findOne({ user: (session.user as any).id })
-      .populate('items.product')
-      .lean();
+    let cart = await Cart.findOne({ user: (session.user as any).id }).populate('items.product');
 
     if (!cart) {
       return NextResponse.json({ items: [] }, { status: 200 });
@@ -97,19 +95,23 @@ export async function PATCH(request: Request) {
 
     await connectDB();
 
-    const updatedCart = await Cart.findOneAndUpdate(
-      { user: userId, 'items.product': productId },
-      { $set: { 'items.$.quantity': quantity } },
-      { new: true } 
-    ).populate('items.product').lean();
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) {
+      return NextResponse.json({ message: "Cart not found" }, { status: 404 });
+    }
 
-    if (!updatedCart) {
-      const cartExists = await Cart.exists({ user: userId });
-      if (!cartExists) return NextResponse.json({ message: "Cart not found" }, { status: 404 });
-      
+    const itemIndex = cart.items.findIndex(
+      (item: any) => item.product.toString() === productId
+    );
+
+    if (itemIndex === -1) {
       return NextResponse.json({ message: "Item not in cart" }, { status: 404 });
     }
 
+    cart.items[itemIndex].quantity = quantity;
+    await cart.save();
+
+    const updatedCart = await Cart.findOne({ user: userId }).populate('items.product');
     return NextResponse.json(updatedCart, { status: 200 });
 
   } catch (error) {
@@ -133,31 +135,28 @@ export async function DELETE(request: Request) {
 
     await connectDB();
 
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) {
+      return NextResponse.json({ message: "Cart not found" }, { status: 404 });
+    }
+
     if (clear === 'true') {
-      const clearedCart = await Cart.findOneAndUpdate(
-        { user: userId },
-        { $set: { items: [] } },
-        { new: true }
-      ).lean();
-      
-      if (!clearedCart) return NextResponse.json({ message: "Cart not found" }, { status: 404 });
-      return NextResponse.json(clearedCart, { status: 200 });
+      cart.items = [];
+      await cart.save();
+      return NextResponse.json(cart, { status: 200 });
     }
 
     if (!productId) {
       return NextResponse.json({ message: "productId is required" }, { status: 400 });
     }
 
-    const updatedCart = await Cart.findOneAndUpdate(
-      { user: userId },
-      { $pull: { items: { product: productId } } },
-      { new: true }
-    ).populate('items.product').lean();
+    cart.items = cart.items.filter(
+      (item: any) => item.product.toString() !== productId
+    );
 
-    if (!updatedCart) {
-      return NextResponse.json({ message: "Cart not found" }, { status: 404 });
-    }
+    await cart.save();
 
+    const updatedCart = await Cart.findOne({ user: userId }).populate('items.product');
     return NextResponse.json(updatedCart, { status: 200 });
 
   } catch (error) {
