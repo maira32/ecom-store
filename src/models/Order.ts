@@ -11,9 +11,9 @@ export interface IOrder extends Document {
   user: mongoose.Types.ObjectId;
   items: IOrderItem[];
   total: number;
-  status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  status: 'pending' | 'processing' | 'completed' | 'cancelled' | 'refunded';
   stripeSessionId?: string;
-  paymentStatus: 'unpaid' | 'paid';
+  paymentStatus: 'unpaid' | 'paid' | 'refunded';
   createdAt: Date;
 }
 
@@ -33,13 +33,13 @@ const OrderSchema = new Schema<IOrder>({
   total: { type: Number, required: true },
   status: {
     type: String,
-    enum: ['pending', 'processing', 'completed', 'cancelled'],
+    enum: ['pending', 'processing', 'completed', 'cancelled', 'refunded'],
     default: 'pending',
   },
   stripeSessionId: { type: String, unique: true, sparse: true },
   paymentStatus: {
     type: String,
-    enum: ['unpaid', 'paid'],
+    enum: ['unpaid', 'paid', 'refunded'],
     default: 'unpaid',
   },
   createdAt: { type: Date, default: Date.now },
