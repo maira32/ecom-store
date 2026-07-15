@@ -18,7 +18,7 @@ export async function GET() {
     await connectDB();
 
     const cart = await Cart.findOne({ user: (session.user as any).id })
-      .populate('items.product')
+      .populate({ path: 'items.product', model: Product })
       .lean();
 
     if (!cart) {
@@ -103,7 +103,7 @@ export async function PATCH(request: Request) {
       { user: userId, 'items.product': productId },
       { $set: { 'items.$.quantity': quantity } },
       { new: true } 
-    ).populate('items.product').lean();
+    ).populate({ path: 'items.product', model: Product }).lean();
 
     if (!updatedCart) {
       const cartExists = await Cart.exists({ user: userId });
@@ -154,7 +154,7 @@ export async function DELETE(request: Request) {
       { user: userId },
       { $pull: { items: { product: productId } } },
       { new: true }
-    ).populate('items.product').lean();
+    ).populate({ path: 'items.product', model: Product }).lean();
 
     if (!updatedCart) {
       return NextResponse.json({ message: "Cart not found" }, { status: 404 });
