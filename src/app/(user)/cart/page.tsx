@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Trash2, Minus, Plus, Loader2, ShoppingBag } from 'lucide-react';
-import { useCartStore } from '@/lib/store';
+import { syncCartBadge } from '@/lib/cartBadge';
 
 interface CartItem {
   _id: string;
@@ -26,7 +26,6 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
-  const incrementCartBadge = useCartStore((s) => s.incrementCartBadge);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -53,9 +52,6 @@ export default function CartPage() {
     if (newQuantity < 1) return;
     setUpdatingId(productId);
 
-    const previousItem = items.find((item) => item.product._id === productId);
-    const delta = previousItem ? newQuantity - previousItem.quantity : 0;
-
     setItems((prev) =>
       prev.map((item) =>
         item.product._id === productId ? { ...item, quantity: newQuantity } : item
@@ -69,7 +65,10 @@ export default function CartPage() {
         body: JSON.stringify({ productId, quantity: newQuantity }),
       });
       if (!res.ok) throw new Error('Failed to update quantity');
-      incrementCartBadge(delta);
+      // Quantity changes never change the number of DISTINCT products,
+      // so the badge doesn't need to change here — but syncing anyway
+      // keeps it self-correcting if anything ever drifts.
+      await syncCartBadge();
     } catch (err) {
       console.error(err);
       fetchCart();
@@ -80,13 +79,12 @@ export default function CartPage() {
 
   const removeItem = async (productId: string) => {
     setUpdatingId(productId);
-    const removedItem = items.find((item) => item.product._id === productId);
 
     try {
       const res = await fetch(`/api/cart?productId=${productId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to remove item');
       setItems((prev) => prev.filter((item) => item.product._id !== productId));
-      if (removedItem) incrementCartBadge(-removedItem.quantity);
+      await syncCartBadge();
     } catch (err) {
       console.error(err);
       alert('Failed to remove item. Please try again.');

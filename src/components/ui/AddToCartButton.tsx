@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart } from 'lucide-react';
-import { useCartStore } from '@/lib/store';
-import toast from 'react-hot-toast';
+import { ShoppingCart, ShieldAlert } from 'lucide-react';
+import { syncCartBadge } from '@/lib/cartBadge';
 
 interface AddToCartProps {
   product: {
@@ -19,11 +18,26 @@ export default function AddToCartButton({ product }: AddToCartProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const incrementCartBadge = useCartStore((s) => s.incrementCartBadge);
+
+  const isAdmin = (session?.user as any)?.role === 'admin';
+
+  if (isAdmin) {
+    return (
+      <button
+        disabled
+        title="Admin accounts can't make purchases"
+        className="flex items-center justify-center gap-2 w-full py-3 px-6 rounded-xl bg-slate-100 text-slate-400 font-semibold cursor-not-allowed"
+      >
+        <ShieldAlert className="w-5 h-5" />
+        Admins can't purchase
+      </button>
+    );
+  }
 
   const handleAddToCart = async () => {
     if (!session) {
-      toast.error("Please log in to add items to your cart.");
+      alert("Please log in to add items to your cart.");
+      router.push('/login');
       return;
     }
 
@@ -45,11 +59,12 @@ export default function AddToCartButton({ product }: AddToCartProps) {
         throw new Error('Failed to add item to cart');
       }
 
-      incrementCartBadge(1);
-      toast.success(`${product.name} added to your cart!`);
+      await syncCartBadge();
+      alert(`${product.name} added to your cart!`);
+
     } catch (error) {
       console.error(error);
-      toast.error("Something went wrong. Please try again.");
+      alert("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
