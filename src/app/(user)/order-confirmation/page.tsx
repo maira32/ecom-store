@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, Receipt } from 'lucide-react';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { connectDB } from '@/lib/mongodb';
 import Order from '@/models/Order';
 import PendingOrderPoller from '@/components/ui/PendingOrderPoller';
+import ClearCartBadgeOnSuccess from '@/components/ui/ClearCartBadgeOnSuccess';
 
 interface OrderConfirmationProps {
   searchParams: Promise<{ session_id?: string }>;
@@ -32,11 +33,9 @@ export default async function OrderConfirmationPage({ searchParams }: OrderConfi
   await connectDB();
   const userId = (session.user as any).id;
 
-  
   const order = await Order.findOne({ stripeSessionId: session_id, user: userId });
 
   if (!order) {
-   
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 md:py-24">
         <PendingOrderPoller />
@@ -46,6 +45,8 @@ export default async function OrderConfirmationPage({ searchParams }: OrderConfi
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-16 md:py-24">
+      <ClearCartBadgeOnSuccess />
+
       <div className="text-center mb-10">
         <div className="inline-flex bg-green-50 rounded-full p-4 mb-6">
           <CheckCircle2 className="w-10 h-10 text-green-600" />
@@ -56,7 +57,7 @@ export default async function OrderConfirmationPage({ searchParams }: OrderConfi
         </p>
       </div>
 
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 md:p-8 mb-10">
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 md:p-8 mb-6">
         <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
           <span className="text-sm text-slate-500">Order ID</span>
           <span className="text-sm font-mono text-slate-700">{order._id.toString()}</span>
@@ -79,10 +80,17 @@ export default async function OrderConfirmationPage({ searchParams }: OrderConfi
         </div>
       </div>
 
-      <div className="text-center">
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <Link
+          href="/orders"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-slate-200 text-slate-900 rounded-xl font-semibold hover:bg-slate-50 transition-colors"
+        >
+          <Receipt className="w-4 h-4" />
+          View My Orders
+        </Link>
         <Link
           href="/"
-          className="inline-block px-6 py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-colors"
+          className="inline-flex items-center justify-center px-6 py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-colors"
         >
           Continue shopping
         </Link>
