@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { connectDB } from '@/lib/mongodb';
 import Cart from '@/models/Cart';
+import Product from '@/models/Product'; 
 import { stripe } from '@/lib/stripe';
 
 export async function POST() {
@@ -19,7 +20,10 @@ export async function POST() {
     const userId = (session.user as any).id;
     await connectDB();
 
-    const cart = await Cart.findOne({ user: userId }).populate('items.product');
+    const cart = await Cart.findOne({ user: userId })
+      .populate({ path: 'items.product', model: Product })
+      .lean();
+      
     const validItems = (cart?.items || []).filter((item: any) => item.product != null);
 
     if (validItems.length === 0) {

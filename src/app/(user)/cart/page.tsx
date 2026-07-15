@@ -147,7 +147,6 @@ export default function CartPage() {
             <ShoppingBag className="w-6 h-6 text-slate-400" />
           </div>
           <p className="text-slate-700 font-medium">Your cart is empty</p>
-          <p className="text-slate-700 font-medium">Your cart is empty</p>
           <Link href="/" className="inline-block mt-4 text-sm font-semibold text-slate-900 underline">
             Continue shopping
           </Link>
