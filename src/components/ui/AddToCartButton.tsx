@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ShoppingCart, ShieldAlert } from 'lucide-react';
 import { syncCartBadge } from '@/lib/cartBadge';
+import toast from 'react-hot-toast'; 
 
 interface AddToCartProps {
   product: {
@@ -36,7 +37,7 @@ export default function AddToCartButton({ product }: AddToCartProps) {
 
   const handleAddToCart = async () => {
     if (!session) {
-      alert("Please log in to add items to your cart.");
+      toast.error("Please log in to add items to your cart."); 
       router.push('/login');
       return;
     }
@@ -60,11 +61,11 @@ export default function AddToCartButton({ product }: AddToCartProps) {
       }
 
       await syncCartBadge();
-      alert(`${product.name} added to your cart!`);
+      toast.success(`${product.name} added to your cart!`); 
 
     } catch (error) {
       console.error(error);
-      alert("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again."); 
     } finally {
       setIsLoading(false);
     }

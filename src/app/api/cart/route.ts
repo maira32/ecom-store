@@ -5,8 +5,6 @@ import { connectDB } from '@/lib/mongodb';
 import Cart from '@/models/Cart';
 import Product from '@/models/Product'; 
 
-export const dynamic = 'force-dynamic';
-
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -18,7 +16,7 @@ export async function GET() {
     await connectDB();
 
     const cart = await Cart.findOne({ user: (session.user as any).id })
-.populate({ path: 'items.product', model: Product })
+      .populate('items.product')
       .lean();
 
     if (!cart) {
@@ -38,6 +36,10 @@ export async function POST(request: Request) {
     
     if (!session || !(session.user as any).id) {
       return NextResponse.json({ message: "Unauthorized. Please log in." }, { status: 401 });
+    }
+
+    if ((session.user as any).role === 'admin') {
+      return NextResponse.json({ message: "Admin accounts can't make purchases." }, { status: 403 });
     }
 
     const { productId, quantity = 1 } = await request.json();
@@ -82,6 +84,10 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    if ((session.user as any).role === 'admin') {
+      return NextResponse.json({ message: "Admin accounts can't make purchases." }, { status: 403 });
+    }
+
     const { productId, quantity } = await request.json();
     const userId = (session.user as any).id;
 
@@ -95,11 +101,12 @@ export async function PATCH(request: Request) {
       { user: userId, 'items.product': productId },
       { $set: { 'items.$.quantity': quantity } },
       { new: true } 
-    ).populate({ path: 'items.product', model: Product }).lean();
+    ).populate('items.product').lean();
 
     if (!updatedCart) {
       const cartExists = await Cart.exists({ user: userId });
       if (!cartExists) return NextResponse.json({ message: "Cart not found" }, { status: 404 });
+      
       return NextResponse.json({ message: "Item not in cart" }, { status: 404 });
     }
 
@@ -145,7 +152,7 @@ export async function DELETE(request: Request) {
       { user: userId },
       { $pull: { items: { product: productId } } },
       { new: true }
-    ).populate({ path: 'items.product', model: Product }).lean();
+    ).populate('items.product').lean();
 
     if (!updatedCart) {
       return NextResponse.json({ message: "Cart not found" }, { status: 404 });

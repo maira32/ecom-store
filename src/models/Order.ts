@@ -13,6 +13,7 @@ export interface IOrder extends Document {
   total: number;
   status: 'pending' | 'processing' | 'completed' | 'cancelled' | 'refunded';
   stripeSessionId?: string;
+  stripePaymentIntentId?: string;
   paymentStatus: 'unpaid' | 'paid' | 'refunded';
   createdAt: Date;
 }
@@ -37,6 +38,7 @@ const OrderSchema = new Schema<IOrder>({
     default: 'pending',
   },
   stripeSessionId: { type: String, unique: true, sparse: true },
+  stripePaymentIntentId: { type: String },
   paymentStatus: {
     type: String,
     enum: ['unpaid', 'paid', 'refunded'],

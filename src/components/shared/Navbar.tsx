@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-import { ShoppingCart, User, Search, Heart, LayoutDashboard, Menu, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ShoppingCart, User, Search, Heart, LayoutDashboard, Menu, X, Receipt } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
+import { syncCartBadge } from '@/lib/cartBadge';
 import { signOut, useSession } from 'next-auth/react';
 
 interface NavbarProps {
@@ -16,21 +17,15 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const isAdmin = session?.user?.role === 'admin';
-
+  const isAdmin = (session?.user as any)?.role === 'admin';
   const badgeCount = useCartStore((s) => s.cartBadgeCount);
-  const setCartBadgeCount = useCartStore((s) => s.setCartBadgeCount);
-  const hydrated = useRef(false);
 
-  // Hydrate the reactive badge from the server-computed count on first load only.
-  // After that, the badge is driven purely by client-side updates from
-  // AddToCartButton / cart page actions, so it's never stuck stale.
+  
   useEffect(() => {
-    if (!hydrated.current) {
-      setCartBadgeCount(cartCount);
-      hydrated.current = true;
+    if (session && !isAdmin) {
+      syncCartBadge();
     }
-  }, [cartCount, setCartBadgeCount]);
+  }, [session, isAdmin]);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -108,23 +103,40 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
               <Search className="w-5 h-5" />
             </button>
 
-            <Link
-              href="/wishlist"
-              className={`hidden sm:block transition-colors ${
-                pathname === '/wishlist' ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Heart className="w-5 h-5" />
-            </Link>
+            
+            {!isAdmin && (
+              <>
+                <Link
+                  href="/wishlist"
+                  className={`hidden sm:block transition-colors ${
+                    pathname === '/wishlist' ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Heart className="w-5 h-5" />
+                </Link>
 
-            <Link href="/cart" className="relative text-slate-600 hover:text-slate-900 transition-colors">
-              <ShoppingCart className="w-5 h-5" />
-              {badgeCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
-                  {badgeCount}
-                </span>
-              )}
-            </Link>
+                {session && (
+                  <Link
+                    href="/orders"
+                    className={`hidden sm:block transition-colors ${
+                      pathname === '/orders' ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    title="My Orders"
+                  >
+                    <Receipt className="w-5 h-5" />
+                  </Link>
+                )}
+
+                <Link href="/cart" className="relative text-slate-600 hover:text-slate-900 transition-colors">
+                  <ShoppingCart className="w-5 h-5" />
+                  {badgeCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+                      {badgeCount}
+                    </span>
+                  )}
+                </Link>
+              </>
+            )}
 
             {session ? (
               <div className="hidden sm:flex items-center space-x-4">
@@ -148,7 +160,6 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
 
         </div>
 
-        {/* Expandable search bar */}
         {searchOpen && (
           <div className="pb-4">
             <form onSubmit={handleSearch} className="flex gap-2">
@@ -171,7 +182,6 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
         )}
       </div>
 
-      {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden border-t border-slate-100 bg-white px-4 py-4 space-y-3">
           {navLinks.map((link) => {
@@ -201,14 +211,28 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
             </Link>
           )}
 
-          <Link
-            href="/wishlist"
-            onClick={() => setMobileOpen(false)}
-            className="flex items-center gap-2 text-sm font-medium text-slate-600 py-2"
-          >
-            <Heart className="w-4 h-4" />
-            Wishlist
-          </Link>
+          {!isAdmin && (
+            <>
+              <Link
+                href="/wishlist"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2 text-sm font-medium text-slate-600 py-2"
+              >
+                <Heart className="w-4 h-4" />
+                Wishlist
+              </Link>
+              {session && (
+                <Link
+                  href="/orders"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2 text-sm font-medium text-slate-600 py-2"
+                >
+                  <Receipt className="w-4 h-4" />
+                  My Orders
+                </Link>
+              )}
+            </>
+          )}
 
           <div className="pt-2 border-t border-slate-100">
             {session ? (

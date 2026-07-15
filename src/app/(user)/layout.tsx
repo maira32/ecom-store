@@ -18,8 +18,9 @@ export default async function UserLayout({ children }: { children: React.ReactNo
       
       if (cart) {
         const validItems = cart.items.filter((item: any) => item.product != null);
-        
-        cartCount = validItems.reduce((total: number, item: any) => total + item.quantity, 0);
+
+
+        cartCount = validItems.length;
       }
     } catch (error) {
       console.error("Error fetching cart count:", error);

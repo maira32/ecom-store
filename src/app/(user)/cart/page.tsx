@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Trash2, Minus, Plus, Loader2, ShoppingBag } from 'lucide-react';
 import { syncCartBadge } from '@/lib/cartBadge';
+import toast from 'react-hot-toast'; // Added toast for sleek notifications
 
 interface CartItem {
   _id: string;
@@ -87,7 +88,7 @@ export default function CartPage() {
       await syncCartBadge();
     } catch (err) {
       console.error(err);
-      alert('Failed to remove item. Please try again.');
+      toast.error('Failed to remove item. Please try again.'); 
     } finally {
       setUpdatingId(null);
     }
@@ -111,7 +112,7 @@ export default function CartPage() {
       window.location.href = data.url;
     } catch (err) {
       console.error(err);
-      alert('Something went wrong starting checkout. Please try again.');
+      toast.error('Something went wrong starting checkout. Please try again.'); 
       setCheckingOut(false);
     }
   };
@@ -145,6 +146,7 @@ export default function CartPage() {
           <div className="inline-flex bg-white rounded-full p-3 mb-4 border border-slate-200">
             <ShoppingBag className="w-6 h-6 text-slate-400" />
           </div>
+          <p className="text-slate-700 font-medium">Your cart is empty</p>
           <p className="text-slate-700 font-medium">Your cart is empty</p>
           <Link href="/" className="inline-block mt-4 text-sm font-semibold text-slate-900 underline">
             Continue shopping
