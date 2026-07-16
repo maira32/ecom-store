@@ -15,19 +15,27 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
 
     const { id } = await params;
-    const { status } = await request.json();
+    const { status, reason } = await request.json();
 
     if (!VALID_STATUSES.includes(status)) {
       return NextResponse.json({ success: false, message: "Invalid status" }, { status: 400 });
     }
 
+    if (status === 'cancelled' && !reason?.trim()) {
+      return NextResponse.json(
+        { success: false, message: "A reason is required when cancelling an order" },
+        { status: 400 }
+      );
+    }
+
     await connectDB();
-    
-    const updated = await Order.findByIdAndUpdate(
-      id, 
-      { status }, 
-      { new: true }
-    ).lean();
+
+    const update: any = { status };
+    if (status === 'cancelled') {
+      update.cancelReason = reason.trim();
+    }
+
+    const updated = await Order.findByIdAndUpdate(id, update, { new: true });
 
     if (!updated) {
       return NextResponse.json({ success: false, message: "Order not found" }, { status: 404 });

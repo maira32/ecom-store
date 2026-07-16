@@ -7,8 +7,6 @@ import User from "@/models/User";
 export const authOptions: NextAuthOptions = {
   providers: [
     // Regular customer login — used by /login.
-    // Explicitly rejects admin accounts so admins can't bypass the
-    // dedicated admin flow by just using the customer form.
     CredentialsProvider({
       id: "credentials",
       name: "Credentials",
@@ -17,8 +15,16 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        // Every failure branch below throws the SAME generic message.
+        // This is intentional: if the message changed depending on
+        // *why* login failed (no such user / wrong password / this is
+        // actually an admin account), someone could use that difference
+        // to figure out which emails are registered, or which ones
+        // belong to admins. One message, always.
+        const genericError = "Invalid email or password";
+
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Missing email or password");
+          throw new Error(genericError);
         }
 
         await connectDB();
@@ -26,17 +32,17 @@ export const authOptions: NextAuthOptions = {
         const user = await User.findOne({ email: credentials.email }).select("+password");
 
         if (!user) {
-          throw new Error("No user found with this email");
+          throw new Error(genericError);
         }
 
         const isPasswordMatch = await bcrypt.compare(credentials.password, user.password);
 
         if (!isPasswordMatch) {
-          throw new Error("Incorrect password");
+          throw new Error(genericError);
         }
 
         if (user.role === 'admin') {
-          throw new Error("Admin accounts must sign in through the admin portal");
+          throw new Error(genericError);
         }
 
         return {
@@ -48,9 +54,10 @@ export const authOptions: NextAuthOptions = {
       }
     }),
 
-    // Admin-only login — used by /admin-login.
-    // Explicitly rejects non-admin accounts, so this route can't be used
-    // as a second way in for regular customers either.
+    // Admin-only login — used by /admin-login. Same principle applies:
+    // a non-admin account gets the same generic message a wrong
+    // password would, so this form can't be used to fish for which
+    // emails have admin access either.
     CredentialsProvider({
       id: "admin-credentials",
       name: "Admin Credentials",
@@ -59,8 +66,10 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        const genericError = "Invalid email or password";
+
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Missing email or password");
+          throw new Error(genericError);
         }
 
         await connectDB();
@@ -68,17 +77,17 @@ export const authOptions: NextAuthOptions = {
         const user = await User.findOne({ email: credentials.email }).select("+password");
 
         if (!user) {
-          throw new Error("No user found with this email");
+          throw new Error(genericError);
         }
 
         const isPasswordMatch = await bcrypt.compare(credentials.password, user.password);
 
         if (!isPasswordMatch) {
-          throw new Error("Incorrect password");
+          throw new Error(genericError);
         }
 
         if (user.role !== 'admin') {
-          throw new Error("This account does not have admin access");
+          throw new Error(genericError);
         }
 
         return {

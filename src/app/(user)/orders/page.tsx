@@ -3,7 +3,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { connectDB } from '@/lib/mongodb';
 import Order from '@/models/Order';
 import Link from 'next/link';
-import { Receipt } from 'lucide-react';
+import { Receipt, Info } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,13 @@ const STATUS_LABELS: Record<string, string> = {
   processing: 'Accepted',
   completed: 'Completed',
   cancelled: 'Cancelled',
-  refunded: 'Refunded',
+};
+
+const STATUS_DESCRIPTIONS: Record<string, string> = {
+  pending: 'We\'ve received your order and are reviewing it.',
+  processing: 'Accepted — we\'re preparing/shipping your order.',
+  completed: 'Delivered.',
+  cancelled: 'This order was cancelled.',
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -20,7 +26,6 @@ const STATUS_STYLES: Record<string, string> = {
   processing: 'bg-blue-100 text-blue-800',
   completed: 'bg-green-100 text-green-800',
   cancelled: 'bg-red-100 text-red-800',
-  refunded: 'bg-purple-100 text-purple-800',
 };
 
 const PAYMENT_STYLES: Record<string, string> = {
@@ -79,8 +84,11 @@ export default async function OrdersPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[order.status]}`}>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    title={STATUS_DESCRIPTIONS[order.status]}
+                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[order.status]}`}
+                  >
                     {STATUS_LABELS[order.status]}
                   </span>
                   <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${PAYMENT_STYLES[order.paymentStatus]}`}>
@@ -93,6 +101,30 @@ export default async function OrdersPage() {
               </summary>
 
               <div className="px-6 pb-5 pt-1 border-t border-slate-100">
+
+                {order.status === 'cancelled' && (
+                  <div className="mt-4 bg-red-50 border border-red-100 rounded-xl p-3 text-sm">
+                    <p className="text-red-800 font-medium">
+                      This order was cancelled{order.cancelReason ? `: ${order.cancelReason}` : '.'}
+                    </p>
+                    <p className="text-red-600 mt-1">
+                      {order.paymentStatus === 'refunded'
+                        ? 'A refund has been issued.'
+                        : order.paymentStatus === 'paid'
+                        ? 'A refund has not been issued yet. Contact us if you have questions.'
+                        : 'No payment was taken for this order.'}
+                    </p>
+                  </div>
+                )}
+
+                {order.paymentStatus === 'refunded' && (
+                  <div className="mt-4 bg-purple-50 border border-purple-100 rounded-xl p-3 text-sm">
+                    <p className="text-purple-800 font-medium">
+                      This order was refunded{order.refundReason ? `: ${order.refundReason}` : '.'}
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-2 mt-4">
                   {order.items.map((item: any, idx: number) => (
                     <div key={idx} className="flex justify-between text-sm">
@@ -108,6 +140,13 @@ export default async function OrdersPage() {
           ))}
         </div>
       )}
+
+      <div className="mt-10 flex items-start gap-2 text-xs text-slate-400">
+        <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+        <p>
+          <strong>Pending</strong> = received, not yet reviewed. <strong>Accepted</strong> = confirmed and being prepared/shipped. <strong>Completed</strong> = delivered.
+        </p>
+      </div>
     </div>
   );
 }

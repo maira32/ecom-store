@@ -11,10 +11,16 @@ export interface IOrder extends Document {
   user: mongoose.Types.ObjectId;
   items: IOrderItem[];
   total: number;
-  status: 'pending' | 'processing' | 'completed' | 'cancelled' | 'refunded';
+  // Fulfillment lifecycle — independent of whether money has moved.
+  status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  cancelReason?: string;
+  // Payment lifecycle — independent of fulfillment. An order can be
+  // completed AND later refunded (a return), or cancelled and still
+  // unpaid/paid (refund not yet issued).
+  paymentStatus: 'unpaid' | 'paid' | 'refunded';
+  refundReason?: string;
   stripeSessionId?: string;
   stripePaymentIntentId?: string;
-  paymentStatus: 'unpaid' | 'paid' | 'refunded';
   createdAt: Date;
 }
 
@@ -34,16 +40,18 @@ const OrderSchema = new Schema<IOrder>({
   total: { type: Number, required: true },
   status: {
     type: String,
-    enum: ['pending', 'processing', 'completed', 'cancelled', 'refunded'],
+    enum: ['pending', 'processing', 'completed', 'cancelled'],
     default: 'pending',
   },
-  stripeSessionId: { type: String, unique: true, sparse: true },
-  stripePaymentIntentId: { type: String },
+  cancelReason: { type: String },
   paymentStatus: {
     type: String,
     enum: ['unpaid', 'paid', 'refunded'],
     default: 'unpaid',
   },
+  refundReason: { type: String },
+  stripeSessionId: { type: String, unique: true, sparse: true },
+  stripePaymentIntentId: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 

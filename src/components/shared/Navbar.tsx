@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ShoppingCart, User, Search, Heart, LayoutDashboard, Menu, X, Receipt } from 'lucide-react';
+import { ShoppingCart, User, Search, Heart, LayoutDashboard, Menu, X } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { syncCartBadge } from '@/lib/cartBadge';
 import { signOut, useSession } from 'next-auth/react';
@@ -20,7 +20,6 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
   const isAdmin = (session?.user as any)?.role === 'admin';
   const badgeCount = useCartStore((s) => s.cartBadgeCount);
 
-  
   useEffect(() => {
     if (session && !isAdmin) {
       syncCartBadge();
@@ -31,10 +30,14 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // "Orders" only shows up as a text nav item for logged-in customers —
+  // makes it as discoverable as Home/Categories/Contact instead of being
+  // an unlabeled icon buried in the icon cluster.
   const navLinks = [
     { name: 'Home', href: '/' },
     { name: 'Categories', href: '/categories' },
     { name: 'Contact', href: '/contact' },
+    ...(session && !isAdmin ? [{ name: 'Orders', href: '/orders' }] : []),
   ];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -103,7 +106,6 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
               <Search className="w-5 h-5" />
             </button>
 
-            
             {!isAdmin && (
               <>
                 <Link
@@ -114,18 +116,6 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
                 >
                   <Heart className="w-5 h-5" />
                 </Link>
-
-                {session && (
-                  <Link
-                    href="/orders"
-                    className={`hidden sm:block transition-colors ${
-                      pathname === '/orders' ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                    title="My Orders"
-                  >
-                    <Receipt className="w-5 h-5" />
-                  </Link>
-                )}
 
                 <Link href="/cart" className="relative text-slate-600 hover:text-slate-900 transition-colors">
                   <ShoppingCart className="w-5 h-5" />
@@ -212,26 +202,14 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
           )}
 
           {!isAdmin && (
-            <>
-              <Link
-                href="/wishlist"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 text-sm font-medium text-slate-600 py-2"
-              >
-                <Heart className="w-4 h-4" />
-                Wishlist
-              </Link>
-              {session && (
-                <Link
-                  href="/orders"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 text-sm font-medium text-slate-600 py-2"
-                >
-                  <Receipt className="w-4 h-4" />
-                  My Orders
-                </Link>
-              )}
-            </>
+            <Link
+              href="/wishlist"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2 text-sm font-medium text-slate-600 py-2"
+            >
+              <Heart className="w-4 h-4" />
+              Wishlist
+            </Link>
           )}
 
           <div className="pt-2 border-t border-slate-100">

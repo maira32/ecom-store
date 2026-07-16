@@ -13,6 +13,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     const { id } = await params;
+    const { reason } = await request.json();
+
+    if (!reason?.trim()) {
+      return NextResponse.json(
+        { success: false, message: "A reason is required to issue a refund" },
+        { status: 400 }
+      );
+    }
+
     await connectDB();
 
     const order = await Order.findById(id);
@@ -60,8 +69,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       await stripe.refunds.create({ payment_intent: paymentIntentId });
     } catch (err: any) {
       if (err?.code === 'charge_already_refunded') {
-        order.status = 'refunded';
         order.paymentStatus = 'refunded';
+        order.refundReason = reason.trim();
         await order.save();
         return NextResponse.json({ success: true, data: order }, { status: 200 });
       }
@@ -73,14 +82,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
     }
 
-    order.status = 'refunded';
+    // Note: fulfillment `status` is intentionally left untouched — a
+    // refund is a payment event, not a fulfillment event. The order
+    // stays whatever status it already was (completed, cancelled, etc.).
     order.paymentStatus = 'refunded';
+    order.refundReason = reason.trim();
     await order.save();
 
     return NextResponse.json({ success: true, data: order }, { status: 200 });
   } catch (error: any) {
     console.error("Refund error:", error);
-   
     return NextResponse.json(
       { success: false, message: error?.message || "Refund failed for an unknown reason" },
       { status: 500 }
