@@ -30,9 +30,7 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // "Orders" only shows up as a text nav item for logged-in customers —
-  // makes it as discoverable as Home/Categories/Contact instead of being
-  // an unlabeled icon buried in the icon cluster.
+ 
   const navLinks = [
     { name: 'Home', href: '/' },
     { name: 'Categories', href: '/categories' },

@@ -7,7 +7,7 @@ interface ReasonModalProps {
   title: string;
   description: string;
   confirmLabel: string;
-  confirmColorClass?: string; // e.g. "bg-red-600 hover:bg-red-700"
+  confirmColorClass?: string; 
   submitting: boolean;
   onCancel: () => void;
   onConfirm: (reason: string) => void;

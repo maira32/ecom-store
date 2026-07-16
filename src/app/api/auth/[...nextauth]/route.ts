@@ -6,7 +6,6 @@ import User from "@/models/User";
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    // Regular customer login — used by /login.
     CredentialsProvider({
       id: "credentials",
       name: "Credentials",
@@ -15,12 +14,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // Every failure branch below throws the SAME generic message.
-        // This is intentional: if the message changed depending on
-        // *why* login failed (no such user / wrong password / this is
-        // actually an admin account), someone could use that difference
-        // to figure out which emails are registered, or which ones
-        // belong to admins. One message, always.
+        
         const genericError = "Invalid email or password";
 
         if (!credentials?.email || !credentials?.password) {
@@ -54,10 +48,6 @@ export const authOptions: NextAuthOptions = {
       }
     }),
 
-    // Admin-only login — used by /admin-login. Same principle applies:
-    // a non-admin account gets the same generic message a wrong
-    // password would, so this form can't be used to fish for which
-    // emails have admin access either.
     CredentialsProvider({
       id: "admin-credentials",
       name: "Admin Credentials",

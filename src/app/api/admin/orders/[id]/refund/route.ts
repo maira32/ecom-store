@@ -82,9 +82,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
     }
 
-    // Note: fulfillment `status` is intentionally left untouched — a
-    // refund is a payment event, not a fulfillment event. The order
-    // stays whatever status it already was (completed, cancelled, etc.).
+
     order.paymentStatus = 'refunded';
     order.refundReason = reason.trim();
     await order.save();

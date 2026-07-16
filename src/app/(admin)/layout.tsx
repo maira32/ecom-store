@@ -2,17 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Toaster } from 'react-hot-toast';
 import { useState } from 'react';
+import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard,
   Package,
   Tags,
   Receipt,
+  Mail,
   ArrowLeft,
   Menu,
   X,
-  Mail,
+  LogOut,
 } from 'lucide-react';
 
 const navItems = [
@@ -95,18 +96,23 @@ export default function AdminLayout({
           })}
         </nav>
 
-        <div className="mt-auto border-t border-black/10 pt-6">
+        <div className="mt-auto border-t border-black/10 pt-4 space-y-1">
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+          >
+            <LogOut className="w-4 h-4 flex-shrink-0" />
+            Logout
+          </button>
           <Link
             href="/"
-            className="flex items-center gap-2 text-slate-700 hover:text-slate-900 text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-slate-700 hover:text-slate-900 text-sm font-medium transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Store
           </Link>
         </div>
       </aside>
-      
-<Toaster position="top-right" />
 
       <main className="flex-1 p-4 pt-20 md:p-8 md:pt-8 overflow-y-auto h-screen w-full min-w-0">
         {children}

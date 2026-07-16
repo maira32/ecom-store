@@ -11,12 +11,9 @@ export interface IOrder extends Document {
   user: mongoose.Types.ObjectId;
   items: IOrderItem[];
   total: number;
-  // Fulfillment lifecycle — independent of whether money has moved.
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   cancelReason?: string;
-  // Payment lifecycle — independent of fulfillment. An order can be
-  // completed AND later refunded (a return), or cancelled and still
-  // unpaid/paid (refund not yet issued).
+
   paymentStatus: 'unpaid' | 'paid' | 'refunded';
   refundReason?: string;
   stripeSessionId?: string;
