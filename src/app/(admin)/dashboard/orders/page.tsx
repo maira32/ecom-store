@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, Receipt, Undo2, Info } from 'lucide-react';
+import { Loader2, Receipt, Undo2, Info, Search } from 'lucide-react';
 import AdminPagination from '@/components/ui/AdminPagination';
 import ReasonModal from '@/components/ui/ReasonModal';
 
@@ -35,6 +35,8 @@ const STATUS_DESCRIPTIONS: Record<string, string> = {
   cancelled: 'Order will not be fulfilled.',
 };
 
+// Universally intuitive tint mapping:
+// Pending = yellow, Accepted = blue, Completed = green, Cancelled = red
 const STATUS_STYLES: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
   processing: 'bg-blue-100 text-blue-800',
@@ -42,10 +44,13 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-800',
 };
 
+// Paid = green, Unpaid = neutral, Refunded = gray (grouped visually with
+// Cancelled's "nothing further happening here" meaning, but kept distinct
+// from red since it's a resolved/neutral state, not a warning).
 const PAYMENT_STYLES: Record<string, string> = {
   unpaid: 'bg-slate-100 text-slate-600',
   paid: 'bg-green-100 text-green-800',
-  refunded: 'bg-purple-100 text-purple-800',
+  refunded: 'bg-gray-200 text-gray-700',
 };
 
 export default function AdminOrdersPage() {
@@ -53,6 +58,7 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [refundingId, setRefundingId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -136,13 +142,29 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(orders.length / pageSize));
+  const filteredOrders = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return orders;
+    return orders.filter(
+      (o) =>
+        o._id.toLowerCase().includes(term) ||
+        (o.user?.name || '').toLowerCase().includes(term) ||
+        (o.user?.email || '').toLowerCase().includes(term)
+    );
+  }, [orders, searchTerm]);
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
   const safePage = Math.min(page, totalPages);
 
   const paginatedOrders = useMemo(() => {
     const start = (safePage - 1) * pageSize;
-    return orders.slice(start, start + pageSize);
-  }, [orders, safePage, pageSize]);
+    return filteredOrders.slice(start, start + pageSize);
+  }, [filteredOrders, safePage, pageSize]);
 
   const handlePageSizeChange = (size: number) => {
     setPageSize(size);
@@ -183,6 +205,17 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
+      <div className="relative mb-4 max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          placeholder="Search by customer, email, or order ID..."
+          className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl bg-white text-sm text-slate-900 focus:ring-2 focus:ring-slate-900 focus:outline-none"
+        />
+      </div>
+
       {orders.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-12 flex flex-col items-center text-center">
           <div className="bg-slate-100 rounded-full p-3 mb-4">
@@ -190,6 +223,10 @@ export default function AdminOrdersPage() {
           </div>
           <p className="text-slate-700 font-medium">No orders yet</p>
           <p className="text-sm text-slate-500 mt-1">Orders will show up here once customers check out.</p>
+        </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-12 text-center text-slate-500">
+          No orders match "{searchTerm}"
         </div>
       ) : (
         <>
@@ -278,7 +315,7 @@ export default function AdminOrdersPage() {
               currentPage={safePage}
               totalPages={totalPages}
               pageSize={pageSize}
-              totalItems={orders.length}
+              totalItems={filteredOrders.length}
               onPageChange={setPage}
               onPageSizeChange={handlePageSizeChange}
             />

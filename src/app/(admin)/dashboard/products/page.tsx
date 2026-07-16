@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Edit, Trash2, Loader2, Package } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Package, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import AdminPagination from '@/components/ui/AdminPagination';
@@ -21,8 +21,8 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [page, setPage] = useState(() => {
     if (typeof window === 'undefined') return 1;
@@ -88,13 +88,26 @@ export default function AdminProductsPage() {
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
+  const filteredProducts = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return products;
+    return products.filter(
+      (p) => p.name.toLowerCase().includes(term) || p.category.toLowerCase().includes(term)
+    );
+  }, [products, searchTerm]);
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setPage(1);
+  };
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
   const safePage = Math.min(page, totalPages);
 
   const paginatedProducts = useMemo(() => {
     const start = (safePage - 1) * pageSize;
-    return products.slice(start, start + pageSize);
-  }, [products, safePage, pageSize]);
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, safePage, pageSize]);
 
   const handlePageSizeChange = (size: number) => {
     setPageSize(size);
@@ -125,6 +138,17 @@ export default function AdminProductsPage() {
         </Link>
       </div>
 
+      <div className="relative mb-4 max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          placeholder="Search by name or category..."
+          className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl bg-white text-sm text-slate-900 focus:ring-2 focus:ring-slate-900 focus:outline-none"
+        />
+      </div>
+
       {products.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-12 flex flex-col items-center text-center">
           <div className="bg-slate-100 rounded-full p-3 mb-4">
@@ -132,6 +156,10 @@ export default function AdminProductsPage() {
           </div>
           <p className="text-slate-700 font-medium">No products yet</p>
           <p className="text-sm text-slate-500 mt-1">Add your first product to see it here.</p>
+        </div>
+      ) : filteredProducts.length === 0 ? (
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-12 text-center text-slate-500">
+          No products match "{searchTerm}"
         </div>
       ) : (
         <>
@@ -196,7 +224,7 @@ export default function AdminProductsPage() {
               currentPage={safePage}
               totalPages={totalPages}
               pageSize={pageSize}
-              totalItems={products.length}
+              totalItems={filteredProducts.length}
               onPageChange={setPage}
               onPageSizeChange={handlePageSizeChange}
             />
