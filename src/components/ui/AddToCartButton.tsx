@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart, ShieldAlert } from 'lucide-react';
+import { ShoppingCart, ShieldAlert, LogIn } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { syncCartBadge } from '@/lib/cartBadge';
-import toast from 'react-hot-toast'; 
 
 interface AddToCartProps {
   product: {
@@ -37,8 +37,25 @@ export default function AddToCartButton({ product }: AddToCartProps) {
 
   const handleAddToCart = async () => {
     if (!session) {
-      toast.error("Please log in to add items to your cart."); 
-      router.push('/login');
+    
+      toast(
+        (t) => (
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-700">Log in to add items to your cart</span>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                router.push('/login');
+              }}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-900 hover:underline flex-shrink-0"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              Log In
+            </button>
+          </div>
+        ),
+        { duration: 5000 }
+      );
       return;
     }
 
@@ -61,11 +78,11 @@ export default function AddToCartButton({ product }: AddToCartProps) {
       }
 
       await syncCartBadge();
-      toast.success(`${product.name} added to your cart!`); 
+      toast.success(`${product.name} added to your cart`);
 
     } catch (error) {
       console.error(error);
-      toast.error("Something went wrong. Please try again."); 
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }

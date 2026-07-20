@@ -23,6 +23,10 @@ const UserSchema: Schema = new Schema({
 
   resetPasswordToken: { type: String, select: false },
   resetPasswordExpires: { type: Date, select: false },
+
+  isPremium: { type: Boolean, default: false },
+stripeCustomerId: { type: String },
+stripeSubscriptionId: { type: String },
   
   role: { 
     type: String, 

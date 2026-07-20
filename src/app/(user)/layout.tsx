@@ -1,5 +1,6 @@
 import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
+import GuestBanner from "@/components/shared/GuestBanner";
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { connectDB } from '@/lib/mongodb';
@@ -18,8 +19,6 @@ export default async function UserLayout({ children }: { children: React.ReactNo
       
       if (cart) {
         const validItems = cart.items.filter((item: any) => item.product != null);
-
-
         cartCount = validItems.length;
       }
     } catch (error) {
@@ -30,6 +29,7 @@ export default async function UserLayout({ children }: { children: React.ReactNo
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar cartCount={cartCount} />
+      <GuestBanner />
       <Toaster position="top-right" />
       <main className="flex-grow">
         {children}

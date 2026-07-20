@@ -31,7 +31,7 @@ const STATUS_STYLES: Record<string, string> = {
 const PAYMENT_STYLES: Record<string, string> = {
   unpaid: 'bg-slate-100 text-slate-600',
   paid: 'bg-green-100 text-green-800',
-  refunded: 'bg-purple-100 text-purple-800',
+  refunded: 'bg-gray-200 text-gray-700',
 };
 
 export default async function OrdersPage() {
@@ -117,9 +117,17 @@ export default async function OrdersPage() {
                   </div>
                 )}
 
+                {order.revertReason && (
+                  <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl p-3 text-sm">
+                    <p className="text-amber-800 font-medium">
+                      This order's status was corrected: {order.revertReason}
+                    </p>
+                  </div>
+                )}
+
                 {order.paymentStatus === 'refunded' && (
-                  <div className="mt-4 bg-purple-50 border border-purple-100 rounded-xl p-3 text-sm">
-                    <p className="text-purple-800 font-medium">
+                  <div className="mt-4 bg-gray-100 border border-gray-200 rounded-xl p-3 text-sm">
+                    <p className="text-gray-800 font-medium">
                       This order was refunded{order.refundReason ? `: ${order.refundReason}` : '.'}
                     </p>
                   </div>

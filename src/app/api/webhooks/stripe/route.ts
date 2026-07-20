@@ -3,6 +3,8 @@ import { stripe } from '@/lib/stripe';
 import { connectDB } from '@/lib/mongodb';
 import Order from '@/models/Order';
 import Cart from '@/models/Cart';
+import User from '@/models/User';
+import { createNotification } from '@/lib/notifications';
 import Stripe from 'stripe';
 
 export async function POST(request: Request) {
@@ -34,6 +36,37 @@ export async function POST(request: Request) {
     try {
       await connectDB();
 
+      // Membership subscription checkout — different flow from a product order.
+      if (checkoutSession.mode === 'subscription') {
+        await User.findByIdAndUpdate(userId, {
+          isPremium: true,
+          stripeCustomerId: checkoutSession.customer as string,
+          stripeSubscriptionId: checkoutSession.subscription as string,
+        });
+
+        await createNotification(
+          userId,
+          'Welcome to Premium!',
+          'Your membership is now active. Enjoy premium products and perks.'
+        );
+
+        const membershipAdmins = await User.find({ role: 'admin' }).select('_id');
+        const purchaser = await User.findById(userId).select('name email');
+        await Promise.all(
+          membershipAdmins.map((admin) =>
+            createNotification(
+              admin._id.toString(),
+              'New membership purchase',
+              `${purchaser?.name || 'A customer'} just became a Premium member`,
+              '/dashboard'
+            )
+          )
+        );
+
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      // Regular one-time product order
       const existing = await Order.findOne({ stripeSessionId: checkoutSession.id });
       if (existing) {
         return NextResponse.json({ received: true }, { status: 200 });
@@ -59,22 +92,62 @@ export async function POST(request: Request) {
         0
       );
 
-      await Order.create({
+      const order = await Order.create({
         user: userId,
         items: orderItems,
         total,
         status: 'pending',
         stripeSessionId: checkoutSession.id,
-       
         stripePaymentIntentId: checkoutSession.payment_intent as string,
         paymentStatus: 'paid',
       });
 
       cart.items = [];
       await cart.save();
+
+      // Notify the customer
+      await createNotification(
+        userId,
+        'Order placed',
+        `Your order for $${total.toFixed(2)} has been received.`,
+        '/orders'
+      );
+
+      // Notify every admin — fan out one notification per admin account
+      const admins = await User.find({ role: 'admin' }).select('_id');
+      await Promise.all(
+        admins.map((admin) =>
+          createNotification(
+            admin._id.toString(),
+            'New order received',
+            `Order #${order._id.toString().slice(-8)} — $${total.toFixed(2)}`,
+            '/dashboard/orders'
+          )
+        )
+      );
     } catch (error) {
       console.error("Webhook order creation error:", error);
       return NextResponse.json({ message: "Internal error" }, { status: 500 });
+    }
+  }
+
+  if (event.type === 'customer.subscription.deleted') {
+    const subscription = event.data.object as Stripe.Subscription;
+    try {
+      await connectDB();
+      const user = await User.findOneAndUpdate(
+        { stripeSubscriptionId: subscription.id },
+        { isPremium: false }
+      );
+      if (user) {
+        await createNotification(
+          user._id.toString(),
+          'Membership ended',
+          'Your premium membership has ended.'
+        );
+      }
+    } catch (error) {
+      console.error("Webhook subscription cancellation error:", error);
     }
   }
 

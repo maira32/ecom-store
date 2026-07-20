@@ -11,6 +11,8 @@
   "dependencies": {
     "@stripe/stripe-js": "^9.9.0",
     "bcryptjs": "^3.0.3",
+    "firebase": "^12.16.0",
+    "firebase-admin": "^14.2.0",
     "lucide-react": "^1.23.0",
     "mongoose": "^9.7.4",
     "next": "16.2.10",

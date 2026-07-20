@@ -44,6 +44,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           role: user.role,
+          isPremium: user.isPremium || false,
         };
       }
     }),
@@ -85,6 +86,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           role: user.role,
+          isPremium: user.isPremium || false, 
         };
       }
     })
@@ -94,6 +96,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         (token as any).role = (user as any).role;
         (token as any).id = user.id; 
+        (token as any).isPremium = (user as any).isPremium; 
       }
       return token;
     },
@@ -101,6 +104,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         (session.user as any).role = (token as any).role;
         (session.user as any).id = (token as any).id; 
+        (session.user as any).isPremium = (token as any).isPremium; 
       }
       return session;
     }

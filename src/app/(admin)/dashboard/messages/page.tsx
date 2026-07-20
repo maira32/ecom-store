@@ -6,11 +6,12 @@ import { redirect } from 'next/navigation';
 import DeleteMessageButton from '@/components/ui/DeleteMessageButton';
 import ReplyMessageButton from '@/components/ui/ReplyMessageButton';
 import MessagesPagination from '@/components/ui/MessagesPagination';
+import MessagesSearch from '@/components/ui/MessagesSearch';
 
 export const dynamic = 'force-dynamic';
 
 interface AdminMessagesPageProps {
-  searchParams: Promise<{ page?: string; limit?: string }>;
+  searchParams: Promise<{ page?: string; limit?: string; search?: string }>;
 }
 
 export default async function AdminMessagesPage({ searchParams }: AdminMessagesPageProps) {
@@ -27,13 +28,24 @@ export default async function AdminMessagesPage({ searchParams }: AdminMessagesP
   const limit = [10, 20, 50].includes(Number(resolvedParams.limit))
     ? Number(resolvedParams.limit)
     : 10;
+  const search = (resolvedParams.search || '').trim();
 
-  const totalCount = await Message.countDocuments();
+  const query = search
+    ? {
+        $or: [
+          { fullName: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { message: { $regex: search, $options: 'i' } },
+        ],
+      }
+    : {};
+
+  const totalCount = await Message.countDocuments(query);
   const totalPages = Math.max(1, Math.ceil(totalCount / limit));
   const safePage = Math.min(currentPage, totalPages);
   const skip = (safePage - 1) * limit;
 
-  const messages = await Message.find({})
+  const messages = await Message.find(query)
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
@@ -46,10 +58,12 @@ export default async function AdminMessagesPage({ searchParams }: AdminMessagesP
         <p className="text-slate-500 mt-2">Manage customer inquiries and contact form submissions.</p>
       </div>
 
+      <MessagesSearch initialValue={search} />
+
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         {messages.length === 0 ? (
           <div className="p-12 text-center text-slate-500">
-            No messages yet. You are all caught up!
+            {search ? `No messages match "${search}"` : 'No messages yet. You are all caught up!'}
           </div>
         ) : (
           <>

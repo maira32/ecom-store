@@ -4,12 +4,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { signOut } from 'next-auth/react';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import NotificationBell from '@/components/shared/NotificationBell';
 import {
   LayoutDashboard,
   Package,
   Tags,
   Receipt,
   Mail,
+  Star,
   ArrowLeft,
   Menu,
   X,
@@ -21,6 +24,7 @@ const navItems = [
   { name: 'Products', href: '/dashboard/products', icon: Package },
   { name: 'Categories', href: '/dashboard/categories', icon: Tags },
   { name: 'Orders', href: '/dashboard/orders', icon: Receipt },
+  { name: 'Reviews', href: '/dashboard/reviews', icon: Star },
   { name: 'Messages', href: '/dashboard/messages', icon: Mail },
 ];
 
@@ -31,19 +35,23 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-[#d6d3d3]">
 
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-[#cfcccc] border-b border-black/10 px-4 h-14 flex items-center justify-between">
         <h2 className="text-lg font-bold tracking-tight text-slate-900">Admin Panel</h2>
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="p-2 rounded-lg hover:bg-black/5 text-slate-900"
-          aria-label="Open menu"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-3">
+          <NotificationBell />
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="p-2 rounded-lg hover:bg-black/5 text-slate-900"
+            aria-label="Open menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {mobileOpen && (
@@ -63,13 +71,16 @@ export default function AdminLayout({
       >
         <div className="flex items-center justify-between mb-10">
           <h2 className="text-xl font-bold tracking-tight">Admin Panel</h2>
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="md:hidden p-1 rounded-lg hover:bg-black/5"
-            aria-label="Close menu"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="md:hidden p-1 rounded-lg hover:bg-black/5"
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <nav className="flex flex-col gap-1.5 flex-grow">
@@ -98,7 +109,7 @@ export default function AdminLayout({
 
         <div className="mt-auto border-t border-black/10 pt-4 space-y-1">
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={() => setLogoutConfirmOpen(true)}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
@@ -117,6 +128,16 @@ export default function AdminLayout({
       <main className="flex-1 p-4 pt-20 md:p-8 md:pt-8 overflow-y-auto h-screen w-full min-w-0">
         {children}
       </main>
+
+      {logoutConfirmOpen && (
+        <ConfirmModal
+          title="Log out?"
+          description="You'll need to log in again to access the admin panel."
+          confirmLabel="Log Out"
+          onCancel={() => setLogoutConfirmOpen(false)}
+          onConfirm={() => signOut({ callbackUrl: '/admin-login' })}
+        />
+      )}
 
     </div>
   );

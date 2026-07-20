@@ -7,6 +7,8 @@ import { ShoppingCart, User, Search, Heart, LayoutDashboard, Menu, X } from 'luc
 import { useCartStore } from '@/lib/store';
 import { syncCartBadge } from '@/lib/cartBadge';
 import { signOut, useSession } from 'next-auth/react';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import NotificationBell from '@/components/shared/NotificationBell';
 
 interface NavbarProps {
   cartCount?: number;
@@ -29,13 +31,16 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
- 
   const navLinks = [
     { name: 'Home', href: '/' },
     { name: 'Categories', href: '/categories' },
     { name: 'Contact', href: '/contact' },
-    ...(session && !isAdmin ? [{ name: 'Orders', href: '/orders' }] : []),
+    ...(session && !isAdmin ? [
+      { name: 'Orders', href: '/orders' },
+      { name: 'Subscription', href: '/subscribe' }
+    ] : []),
   ];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -96,6 +101,8 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
               </Link>
             )}
 
+            <NotificationBell />
+
             <button
               onClick={() => setSearchOpen(!searchOpen)}
               className="text-slate-600 hover:text-slate-900 transition-colors"
@@ -128,11 +135,16 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
 
             {session ? (
               <div className="hidden sm:flex items-center space-x-4">
-                <span className="text-xs font-semibold text-slate-500">
+                <span className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
                   Hi, {session.user?.name?.split(' ')[0]}
+                  {(session.user as any)?.isPremium && (
+                    <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                      PREMIUM
+                    </span>
+                  )}
                 </span>
                 <button
-                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  onClick={() => setLogoutConfirmOpen(true)}
                   className="text-sm font-medium text-red-500 hover:text-red-700 transition-colors"
                 >
                   Logout
@@ -217,7 +229,10 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
                   Hi, {session.user?.name?.split(' ')[0]}
                 </span>
                 <button
-                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  onClick={() => {
+                    setMobileOpen(false);
+                    setLogoutConfirmOpen(true);
+                  }}
                   className="text-sm font-medium text-red-500"
                 >
                   Logout
@@ -230,6 +245,16 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
             )}
           </div>
         </div>
+      )}
+
+      {logoutConfirmOpen && (
+        <ConfirmModal
+          title="Log out?"
+          description="You'll need to log in again to shop or view your orders."
+          confirmLabel="Log Out"
+          onCancel={() => setLogoutConfirmOpen(false)}
+          onConfirm={() => signOut({ callbackUrl: '/login' })}
+        />
       )}
     </nav>
   );

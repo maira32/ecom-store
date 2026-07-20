@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { connectDB } from '@/lib/mongodb';
 import Order from '@/models/Order';
 import { stripe } from '@/lib/stripe';
+import { createNotification } from '@/lib/notifications';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -72,6 +73,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         order.paymentStatus = 'refunded';
         order.refundReason = reason.trim();
         await order.save();
+        await createNotification(
+          order.user.toString(),
+          'Order refunded',
+          `Your order was refunded: ${reason.trim()}`,
+          '/orders'
+        );
         return NextResponse.json({ success: true, data: order }, { status: 200 });
       }
 
@@ -82,10 +89,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
     }
 
-
+  
     order.paymentStatus = 'refunded';
     order.refundReason = reason.trim();
     await order.save();
+
+    await createNotification(
+      order.user.toString(),
+      'Order refunded',
+      `Your order was refunded: ${reason.trim()}`,
+      '/orders'
+    );
 
     return NextResponse.json({ success: true, data: order }, { status: 200 });
   } catch (error: any) {

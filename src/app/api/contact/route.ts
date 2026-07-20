@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import Message from '@/models/Message';
+import User from '@/models/User';
+import { createNotification } from '@/lib/notifications';
 
 export async function POST(request: Request) {
   try {
@@ -13,11 +15,23 @@ export async function POST(request: Request) {
 
     await connectDB();
     
-    await Message.create({
+    const newMessage = await Message.create({
       fullName, 
       email,
       message
     });
+
+    const admins = await User.find({ role: 'admin' }).select('_id');
+    await Promise.all(
+      admins.map((admin) =>
+        createNotification(
+          admin._id.toString(),
+          'New message',
+          `${fullName} sent a message`,
+          '/dashboard/messages'
+        )
+      )
+    );
 
     return NextResponse.json({ success: true, message: "Message sent successfully!" }, { status: 201 });
 
