@@ -14,7 +14,6 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        
         const genericError = "Invalid email or password";
 
         if (!credentials?.email || !credentials?.password) {
@@ -92,12 +91,19 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         (token as any).role = (user as any).role;
         (token as any).id = user.id; 
         (token as any).isPremium = (user as any).isPremium; 
       }
+      
+      if (trigger === 'update' && session) {
+        if (session.isPremium !== undefined) {
+          (token as any).isPremium = session.isPremium;
+        }
+      }
+      
       return token;
     },
     async session({ session, token }) {

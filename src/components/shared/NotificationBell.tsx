@@ -85,6 +85,7 @@ export default function NotificationBell() {
   if (!session) return null;
 
   return (
+    
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
@@ -102,8 +103,8 @@ export default function NotificationBell() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-50">
-            {notifications.length === 0 ? (
+<div className="fixed top-16 left-2 right-2 sm:absolute sm:left-auto sm:right-0 sm:top-auto mt-2 sm:w-80 max-h-96 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-50">
+              {notifications.length === 0 ? (
               <p className="p-4 text-sm text-slate-500 text-center">No notifications yet</p>
             ) : (
               notifications.map((n) => (

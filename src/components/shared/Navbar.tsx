@@ -101,7 +101,7 @@ export default function Navbar({ cartCount = 0 }: NavbarProps) {
               </Link>
             )}
 
-            <NotificationBell />
+            {!isAdmin && <NotificationBell />}
 
             <button
               onClick={() => setSearchOpen(!searchOpen)}

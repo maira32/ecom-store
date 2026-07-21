@@ -30,7 +30,12 @@ export default async function UserLayout({ children }: { children: React.ReactNo
     <div className="flex flex-col min-h-screen">
       <Navbar cartCount={cartCount} />
       <GuestBanner />
-      <Toaster position="top-right" />
+<Toaster 
+  position="top-right"
+  containerStyle={{
+    top: '80px', 
+  }}
+/>
       <main className="flex-grow">
         {children}
       </main>

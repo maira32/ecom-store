@@ -1,15 +1,18 @@
 import { connectDB } from '@/lib/mongodb';
 import Product from '@/models/Product';
 import Order from '@/models/Order';
-import { DollarSign, Package, Clock3 } from 'lucide-react';
+import User from '@/models/User';
+import { DollarSign, Package, Clock3, RefreshCw } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-
   await connectDB();
+  
   const productCount = await Product.countDocuments();
   const pendingOrdersCount = await Order.countDocuments({ status: 'pending' });
+  
+  const activeSubscriptionsCount = await User.countDocuments({ isPremium: true });
 
   const revenueAgg = await Order.aggregate([
     { $match: { status: { $ne: 'cancelled' } } },
@@ -21,13 +24,14 @@ export default async function AdminDashboard() {
     { label: 'Total Revenue', value: `$${totalRevenue.toFixed(2)}`, icon: DollarSign },
     { label: 'Active Products', value: productCount, icon: Package },
     { label: 'Pending Orders', value: pendingOrdersCount, icon: Clock3 },
+    { label: 'Active Subscriptions', value: activeSubscriptionsCount, icon: RefreshCw },
   ];
 
   return (
     <div>
       <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6">Dashboard Overview</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (

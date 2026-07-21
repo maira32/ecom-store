@@ -36,13 +36,27 @@ export async function POST(request: Request) {
     try {
       await connectDB();
 
-      // Membership subscription checkout — different flow from a product order.
       if (checkoutSession.mode === 'subscription') {
-        await User.findByIdAndUpdate(userId, {
-          isPremium: true,
-          stripeCustomerId: checkoutSession.customer as string,
-          stripeSubscriptionId: checkoutSession.subscription as string,
-        });
+        
+        const updatedUser = await User.findOneAndUpdate(
+          { 
+            _id: userId, 
+            isPremium: { $ne: true } 
+          },
+          {
+            $set: {
+              isPremium: true,
+              stripeCustomerId: checkoutSession.customer as string,
+              stripeSubscriptionId: checkoutSession.subscription as string,
+            }
+          },
+          { new: true } 
+        );
+
+        if (!updatedUser) {
+          console.log("Webhook: User is already premium. Skipping duplicate notification.");
+          return NextResponse.json({ received: true }, { status: 200 });
+        }
 
         await createNotification(
           userId,
@@ -52,6 +66,7 @@ export async function POST(request: Request) {
 
         const membershipAdmins = await User.find({ role: 'admin' }).select('_id');
         const purchaser = await User.findById(userId).select('name email');
+        
         await Promise.all(
           membershipAdmins.map((admin) =>
             createNotification(
@@ -66,7 +81,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true }, { status: 200 });
       }
 
-      // Regular one-time product order
       const existing = await Order.findOne({ stripeSessionId: checkoutSession.id });
       if (existing) {
         return NextResponse.json({ received: true }, { status: 200 });
@@ -105,7 +119,6 @@ export async function POST(request: Request) {
       cart.items = [];
       await cart.save();
 
-      // Notify the customer
       await createNotification(
         userId,
         'Order placed',
@@ -113,7 +126,6 @@ export async function POST(request: Request) {
         '/orders'
       );
 
-      // Notify every admin — fan out one notification per admin account
       const admins = await User.find({ role: 'admin' }).select('_id');
       await Promise.all(
         admins.map((admin) =>
@@ -135,10 +147,15 @@ export async function POST(request: Request) {
     const subscription = event.data.object as Stripe.Subscription;
     try {
       await connectDB();
+      
       const user = await User.findOneAndUpdate(
         { stripeSubscriptionId: subscription.id },
-        { isPremium: false }
+        { 
+          $set: { isPremium: false },
+          $unset: { stripeSubscriptionId: "" } 
+        }
       );
+   
       if (user) {
         await createNotification(
           user._id.toString(),

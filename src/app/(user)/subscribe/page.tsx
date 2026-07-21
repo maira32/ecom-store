@@ -1,18 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import toast from 'react-hot-toast'; 
 
 export default function SubscribePage() {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const success = searchParams.get('success') === 'true';
+  
   const [loading, setLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
 
-  const isPremium = (session?.user as any)?.isPremium;
+  useEffect(() => {
+    if (success) {
+      setIsPremium(true);
+      update({ isPremium: true });
+    } else if (session) {
+      setIsPremium((session.user as any)?.isPremium);
+    }
+  }, [session, success, update]);
 
   const handleSubscribe = async () => {
     if (!session) {
@@ -32,9 +43,59 @@ export default function SubscribePage() {
       window.location.href = data.url;
     } catch (err) {
       console.error(err);
-      alert('Something went wrong. Please try again.');
+      toast.error('Something went wrong. Please try again.'); 
       setLoading(false);
     }
+  };
+
+  const processCancel = async () => {
+    setCancelLoading(true);
+    try {
+      const res = await fetch('/api/subscribe/cancel', { method: 'POST' });
+      
+      if (res.ok) {
+        setIsPremium(false);
+        
+        await update({ isPremium: false }); 
+        
+        router.replace('/subscribe'); 
+        toast.success('Subscription cancelled successfully.'); 
+      } else {
+        toast.error('Failed to cancel subscription.'); 
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Something went wrong.');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <span className="text-sm font-medium text-slate-900">
+          Are you sure you want to cancel your Premium membership? You will lose access immediately.
+        </span>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200 transition-colors"
+          >
+            No, keep it
+          </button>
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              processCancel(); 
+            }}
+            className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          >
+            Yes, cancel
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity }); 
   };
 
   return (
@@ -54,7 +115,7 @@ export default function SubscribePage() {
         Become a member for early access to new drops and premium perks.
       </p>
 
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-left">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-left max-w-md mx-auto">
         <div className="flex items-baseline gap-1 mb-6">
           <span className="text-4xl font-extrabold text-slate-900">$9.99</span>
           <span className="text-slate-500">/ month</span>
@@ -76,8 +137,18 @@ export default function SubscribePage() {
         </ul>
 
         {isPremium ? (
-          <div className="w-full py-3 rounded-xl bg-green-50 text-green-800 font-semibold text-center">
-            You're already a member
+          <div className="space-y-3">
+            <div className="w-full py-3 rounded-xl bg-green-50 text-green-800 font-semibold text-center border border-green-100">
+              You're already a member
+            </div>
+            <button
+              onClick={handleCancel}
+              disabled={cancelLoading}
+              className="w-full py-2 text-sm text-slate-500 hover:text-red-600 transition-colors flex items-center justify-center gap-2"
+            >
+              {cancelLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+              {cancelLoading ? 'Cancelling...' : 'Cancel membership'}
+            </button>
           </div>
         ) : (
           <button

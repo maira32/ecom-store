@@ -3,7 +3,12 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IUser extends Document {
   name: string;
   email: string;
-  password?: string; 
+  password?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
+  isPremium: boolean;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
   role: 'user' | 'admin';
   createdAt: Date;
 }
@@ -25,8 +30,8 @@ const UserSchema: Schema = new Schema({
   resetPasswordExpires: { type: Date, select: false },
 
   isPremium: { type: Boolean, default: false },
-stripeCustomerId: { type: String },
-stripeSubscriptionId: { type: String },
+  stripeCustomerId: { type: String },
+  stripeSubscriptionId: { type: String },
   
   role: { 
     type: String, 
