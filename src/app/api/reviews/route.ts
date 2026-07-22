@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { connectDB } from '@/lib/mongodb';
 import Review from '@/models/Review';
+import Order from '@/models/Order';
 
 export async function GET(request: Request) {
   try {
@@ -45,6 +46,22 @@ export async function POST(request: Request) {
     }
 
     await connectDB();
+
+    // A review is only legitimate if this user actually bought this
+    // product AND that order has been fulfilled (Completed). Orders
+    // still Pending/Accepted, or ones that were Cancelled, don't count.
+    const eligibleOrder = await Order.findOne({
+      user: (session.user as any).id,
+      status: 'completed',
+      'items.product': productId,
+    });
+
+    if (!eligibleOrder) {
+      return NextResponse.json(
+        { success: false, message: "You can only review products from orders that have been completed." },
+        { status: 403 }
+      );
+    }
 
     const review = await Review.create({
       product: productId,

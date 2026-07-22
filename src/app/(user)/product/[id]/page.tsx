@@ -1,6 +1,9 @@
 import { connectDB } from '@/lib/mongodb';
 import Product from '@/models/Product';
 import Review from '@/models/Review';
+import Order from '@/models/Order';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AddToCartButton from '@/components/ui/AddToCartButton';
@@ -50,6 +53,17 @@ export default async function ProductDetails({ params }: { params: Promise<{ id:
   const avgRating = reviews.length
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
     : 0;
+
+  const session = await getServerSession(authOptions);
+  let canReview = false;
+  if (session && (session.user as any).role !== 'admin') {
+    const eligibleOrder = await Order.findOne({
+      user: (session.user as any).id,
+      status: 'completed',
+      'items.product': product._id,
+    });
+    canReview = !!eligibleOrder;
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24">
@@ -109,8 +123,8 @@ export default async function ProductDetails({ params }: { params: Promise<{ id:
 
       </div>
 
-      <div id="reviews">
-        <ReviewsSection productId={product._id.toString()} initialReviews={reviews} />
+       <div id="reviews">
+        <ReviewsSection productId={product._id.toString()} initialReviews={reviews} canReview={canReview} />
       </div>
 
       {relatedProducts.length > 0 && (
@@ -133,7 +147,7 @@ export default async function ProductDetails({ params }: { params: Promise<{ id:
         </div>
       )}
 
-      
+     
     </div>
   );
 }

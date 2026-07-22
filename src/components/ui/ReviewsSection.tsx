@@ -18,9 +18,10 @@ interface Review {
 interface ReviewsSectionProps {
   productId: string;
   initialReviews: Review[];
+  canReview: boolean;
 }
 
-export default function ReviewsSection({ productId, initialReviews }: ReviewsSectionProps) {
+export default function ReviewsSection({ productId, initialReviews, canReview }: ReviewsSectionProps) {
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -130,6 +131,7 @@ export default function ReviewsSection({ productId, initialReviews }: ReviewsSec
         )}
       </div>
 
+      {/* Leave a review — only for logged-in, non-admin, first-time reviewers */}
       {!session ? (
         <button
           onClick={handlePromptLogin}
@@ -139,6 +141,10 @@ export default function ReviewsSection({ productId, initialReviews }: ReviewsSec
         </button>
       ) : isAdmin ? null : hasReviewed ? (
         <p className="mb-10 text-sm text-slate-500">You've already reviewed this product.</p>
+      ) : !canReview ? (
+        <p className="mb-10 text-sm text-slate-500">
+          You can leave a review once your order for this product has been marked Completed.
+        </p>
       ) : (
         <form onSubmit={handleSubmit} className="mb-10 bg-slate-50 border border-slate-100 rounded-2xl p-6">
           <p className="text-sm font-semibold text-slate-900 mb-3">Leave a review</p>
