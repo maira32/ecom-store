@@ -6,6 +6,12 @@ export interface IReview extends Document {
   userName: string;
   rating: number;
   comment: string;
+  isEdited: boolean;
+  editHistory: {
+    rating: number;
+    comment: string;
+    editedAt: Date;
+  }[];
   createdAt: Date;
 }
 
@@ -15,6 +21,14 @@ const ReviewSchema = new Schema<IReview>({
   userName: { type: String, required: true },
   rating: { type: Number, required: true, min: 1, max: 5 },
   comment: { type: String, required: true, trim: true },
+  isEdited: { type: Boolean, default: false },
+  editHistory: [
+    {
+      rating: { type: Number, required: true },
+      comment: { type: String, required: true },
+      editedAt: { type: Date, default: Date.now }
+    }
+  ],
   createdAt: { type: Date, default: Date.now },
 });
 

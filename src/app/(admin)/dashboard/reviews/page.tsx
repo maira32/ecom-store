@@ -1,9 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, Star, Trash2, MessageSquare, Search } from 'lucide-react';
+import { Loader2, Star, Trash2, MessageSquare, Search, History, ChevronDown, ChevronUp } from 'lucide-react';
 import AdminPagination from '@/components/ui/AdminPagination';
 import toast from 'react-hot-toast'; 
+
+interface EditHistoryItem {
+  rating: number;
+  comment: string;
+  editedAt: string;
+}
 
 interface AdminReview {
   _id: string;
@@ -12,6 +18,8 @@ interface AdminReview {
   rating: number;
   comment: string;
   createdAt: string;
+  isEdited?: boolean;
+  editHistory?: EditHistoryItem[];
 }
 
 export default function AdminReviewsPage() {
@@ -20,6 +28,7 @@ export default function AdminReviewsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   
   const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
+  const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
 
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
@@ -39,6 +48,13 @@ export default function AdminReviewsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleHistory = (reviewId: string) => {
+    setExpandedHistory((prev) => ({
+      ...prev,
+      [reviewId]: !prev[reviewId],
+    }));
   };
 
   const executeDelete = async () => {
@@ -148,42 +164,96 @@ export default function AdminReviewsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 bg-white">
-                    {paginatedReviews.map((review) => (
-                      <tr key={review._id} className="hover:bg-slate-50 transition-colors">
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900">
-                          {review.product?.name || 'Deleted product'}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-700">
-                          {review.userName}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4">
-                          <div className="flex text-amber-400">
-                            {[1, 2, 3, 4, 5].map((i) => (
-                              <Star key={i} className={`w-3.5 h-3.5 ${i <= review.rating ? 'fill-amber-400' : 'text-slate-200'}`} />
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">
-                          {review.comment}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
-                          {new Date(review.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-right">
-                          <button
-                            onClick={() => setReviewToDelete(review._id)}
-                            disabled={deletingId === review._id}
-                            className="text-slate-400 hover:text-red-600 transition-colors disabled:opacity-50"
-                          >
-                            {deletingId === review._id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
+                    {paginatedReviews.map((review) => {
+                      const hasHistory = review.isEdited || (review.editHistory && review.editHistory.length > 0);
+                      const latestEditDate = review.editHistory && review.editHistory.length > 0
+                        ? review.editHistory[review.editHistory.length - 1].editedAt
+                        : null;
+
+                      return (
+                        <tr key={review._id} className="hover:bg-slate-50 transition-colors">
+                          <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900">
+                            {review.product?.name || 'Deleted product'}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-700">
+                            {review.userName}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4">
+                            <div className="flex text-amber-400">
+                              {[1, 2, 3, 4, 5].map((i) => (
+                                <Star key={i} className={`w-3.5 h-3.5 ${i <= review.rating ? 'fill-amber-400' : 'text-slate-200'}`} />
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm max-w-xs break-words">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-slate-800">{review.comment}</span>
+                              {hasHistory && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                                  Edited
+                                </span>
+                              )}
+                            </div>
+
+                            {hasHistory && review.editHistory && review.editHistory.length > 0 && (
+                              <div className="mt-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleHistory(review._id)}
+                                  className="inline-flex items-center gap-1 text-xs text-amber-600 font-semibold hover:text-amber-700 transition-colors"
+                                >
+                                  <History className="w-3.5 h-3.5" />
+                                  {expandedHistory[review._id] ? 'Hide History' : 'View Edit History'}
+                                  {expandedHistory[review._id] ? (
+                                    <ChevronUp className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <ChevronDown className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+
+                                {expandedHistory[review._id] && (
+                                  <div className="mt-2 space-y-2 border-l-2 border-amber-300 pl-3 py-1 bg-amber-50/60 rounded-r-lg">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Previous Versions</p>
+                                    {review.editHistory.map((item, idx) => (
+                                      <div key={idx} className="text-xs text-slate-600 space-y-0.5">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-semibold text-amber-600">{item.rating} ★</span>
+                                          <span className="text-[11px] text-slate-400">
+                                            {new Date(item.editedAt).toLocaleDateString()}
+                                          </span>
+                                        </div>
+                                        <p className="italic text-slate-500">"{item.comment}"</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             )}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
+                            <div>{new Date(review.createdAt).toLocaleDateString()}</div>
+                            {latestEditDate && (
+                              <div className="text-[11px] text-amber-600 font-medium mt-0.5">
+                                Updated: {new Date(latestEditDate).toLocaleDateString()}
+                              </div>
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-right">
+                            <button
+                              onClick={() => setReviewToDelete(review._id)}
+                              disabled={deletingId === review._id}
+                              className="text-slate-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                            >
+                              {deletingId === review._id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

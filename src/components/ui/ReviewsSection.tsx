@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Star, Trash2, Loader2, LogIn } from 'lucide-react';
+import { Star, Trash2, Loader2, LogIn, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Review {
@@ -13,6 +13,7 @@ interface Review {
   rating: number;
   comment: string;
   createdAt: string;
+  isEdited?: boolean;
 }
 
 interface ReviewsSectionProps {
@@ -32,9 +33,17 @@ export default function ReviewsSection({ productId, initialReviews, canReview }:
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const userId = (session?.user as any)?.id;
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editRating, setEditRating] = useState(0);
+  const [editHoverRating, setEditHoverRating] = useState(0);
+  const [editComment, setEditComment] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
+
+  const userId = String((session?.user as any)?.id || '');
   const isAdmin = (session?.user as any)?.role === 'admin';
-  const hasReviewed = reviews.some((r) => r.user === userId);
+  const hasReviewed = reviews.some((r) => String(r.user) === userId);
 
   const avgRating = reviews.length
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
@@ -92,16 +101,55 @@ export default function ReviewsSection({ productId, initialReviews, canReview }:
     }
   };
 
-  const handleDelete = async (reviewId: string) => {
-    if (!confirm('Delete this review?')) return;
+  const startEditing = (review: Review) => {
+    setEditingId(review._id);
+    setEditRating(review.rating);
+    setEditComment(review.comment);
+    setEditHoverRating(0);
+  };
 
-    setDeletingId(reviewId);
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingId || !editRating || !editComment.trim()) return;
+
+    setIsUpdating(true);
     try {
-      const res = await fetch(`/api/reviews/${reviewId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/reviews/${editingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: editRating, comment: editComment.trim() }),
+      });
       const data = await res.json();
 
       if (data.success) {
-        setReviews((prev) => prev.filter((r) => r._id !== reviewId));
+        setReviews((prev) =>
+          prev.map((r) => (r._id === editingId ? { ...r, rating: editRating, comment: editComment.trim(), isEdited: true } : r))
+        );
+        toast.success('Review updated!');
+        setEditingId(null);
+      } else {
+        toast.error(data.message || 'Failed to update review');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Something went wrong');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const executeDelete = async () => {
+    if (!reviewToDelete) return;
+
+    setDeletingId(reviewToDelete);
+    try {
+      const res = await fetch(`/api/reviews/${reviewToDelete}`, { method: 'DELETE' });
+      const data = await res.json();
+
+      if (data.success) {
+        setReviews((prev) => prev.filter((r) => r._id !== reviewToDelete));
+        toast.success('Review deleted');
+        setReviewToDelete(null);
       } else {
         toast.error(data.message || 'Failed to delete review');
       }
@@ -114,122 +162,217 @@ export default function ReviewsSection({ productId, initialReviews, canReview }:
   };
 
   return (
-    <div className="mt-24 pt-16 border-t border-slate-100">
-      <div className="flex items-center gap-3 mb-8">
-        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Reviews</h2>
-        {reviews.length > 0 && (
-          <div className="flex items-center gap-1.5">
-            <div className="flex text-amber-400">
+    <>
+      <div className="mt-24 pt-16 border-t border-slate-100">
+        <div className="flex items-center gap-3 mb-8">
+          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Reviews</h2>
+          {reviews.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <div className="flex text-amber-400">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star key={i} className={`w-4 h-4 ${i <= roundedAvg ? 'fill-amber-400' : 'text-slate-200'}`} />
+                ))}
+              </div>
+              <span className="text-sm text-slate-500">
+                {avgRating.toFixed(1)} ({reviews.length} review{reviews.length !== 1 ? 's' : ''})
+              </span>
+            </div>
+          )}
+        </div>
+
+        {!session ? (
+          <button
+            onClick={handlePromptLogin}
+            className="mb-10 px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            Log in to leave a review
+          </button>
+        ) : isAdmin ? null : hasReviewed ? (
+          <p className="mb-10 text-sm text-slate-500">You've already reviewed this product.</p>
+        ) : !canReview ? (
+          <p className="mb-10 text-sm text-slate-500">
+            You can leave a review once your order for this product has been marked Completed.
+          </p>
+        ) : (
+          <form onSubmit={handleSubmit} className="mb-10 bg-slate-50 border border-slate-100 rounded-2xl p-6">
+            <p className="text-sm font-semibold text-slate-900 mb-3">Leave a review</p>
+
+            <div className="flex gap-1 mb-4">
               {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} className={`w-4 h-4 ${i <= roundedAvg ? 'fill-amber-400' : 'text-slate-200'}`} />
+                <button
+                  key={i}
+                  type="button"
+                  onMouseEnter={() => setHoverRating(i)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  onClick={() => setRating(i)}
+                  aria-label={`Rate ${i} stars`}
+                >
+                  <Star
+                    className={`w-6 h-6 transition-colors ${
+                      i <= (hoverRating || rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
+                    }`}
+                  />
+                </button>
               ))}
             </div>
-            <span className="text-sm text-slate-500">
-              {avgRating.toFixed(1)} ({reviews.length} review{reviews.length !== 1 ? 's' : ''})
-            </span>
+
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={3}
+              placeholder="Share your thoughts on this product..."
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none text-sm text-slate-900 bg-white"
+            />
+
+            <button
+              type="submit"
+              disabled={!rating || !comment.trim() || submitting}
+              className="mt-3 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              Submit Review
+            </button>
+          </form>
+        )}
+
+        {reviews.length === 0 ? (
+          <p className="text-slate-500 text-sm">No reviews yet. Be the first to review this product.</p>
+        ) : (
+          <div className="space-y-6">
+            {reviews.map((review) => {
+              const isOwner = !!userId && String(review.user) === userId;
+              const canDelete = isOwner || isAdmin;
+
+              if (editingId === review._id) {
+                return (
+                  <form key={review._id} onSubmit={handleUpdate} className="border border-slate-200 rounded-2xl p-5">
+                    <div className="flex gap-1 mb-3">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onMouseEnter={() => setEditHoverRating(i)}
+                          onMouseLeave={() => setEditHoverRating(0)}
+                          onClick={() => setEditRating(i)}
+                        >
+                          <Star
+                            className={`w-5 h-5 transition-colors ${
+                              i <= (editHoverRating || editRating) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      value={editComment}
+                      onChange={(e) => setEditComment(e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none text-sm text-slate-900 bg-white mb-3"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={!editRating || !editComment.trim() || isUpdating}
+                        className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        disabled={isUpdating}
+                        className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-200 disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                );
+              }
+
+              return (
+                <div key={review._id} className="border-b border-slate-100 pb-6 last:border-0">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-slate-900 text-sm">{review.userName}</span>
+                        <div className="flex text-amber-400">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <Star key={i} className={`w-3.5 h-3.5 ${i <= review.rating ? 'fill-amber-400' : 'text-slate-200'}`} />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-400 flex items-center gap-1.5">
+                        {new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {review.isEdited && <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-medium">Edited</span>}
+                      </p>
+                    </div>
+                    
+                    {(isOwner || canDelete) && (
+                      <div className="flex items-center gap-3">
+                        {isOwner && (
+                          <button
+                            onClick={() => startEditing(review)}
+                            className="flex items-center gap-1 text-slate-400 hover:text-slate-700 transition-colors"
+                            aria-label="Edit review"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            <span className="text-xs font-medium">Edit</span>
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => setReviewToDelete(review._id)}
+                            disabled={deletingId === review._id}
+                            className="flex items-center gap-1 text-slate-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                            aria-label="Delete review"
+                          >
+                            {deletingId === review._id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm text-slate-600 mt-2 leading-relaxed">{review.comment}</p>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Leave a review — only for logged-in, non-admin, first-time reviewers */}
-      {!session ? (
-        <button
-          onClick={handlePromptLogin}
-          className="mb-10 px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-        >
-          Log in to leave a review
-        </button>
-      ) : isAdmin ? null : hasReviewed ? (
-        <p className="mb-10 text-sm text-slate-500">You've already reviewed this product.</p>
-      ) : !canReview ? (
-        <p className="mb-10 text-sm text-slate-500">
-          You can leave a review once your order for this product has been marked Completed.
-        </p>
-      ) : (
-        <form onSubmit={handleSubmit} className="mb-10 bg-slate-50 border border-slate-100 rounded-2xl p-6">
-          <p className="text-sm font-semibold text-slate-900 mb-3">Leave a review</p>
-
-          <div className="flex gap-1 mb-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <button
-                key={i}
-                type="button"
-                onMouseEnter={() => setHoverRating(i)}
-                onMouseLeave={() => setHoverRating(0)}
-                onClick={() => setRating(i)}
-                aria-label={`Rate ${i} stars`}
+      {reviewToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl border border-slate-100">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Delete Review?</h3>
+            <p className="text-slate-600 mb-6 text-sm leading-relaxed whitespace-normal break-words">
+              Are you sure you want to delete this review? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => setReviewToDelete(null)}
+                disabled={deletingId !== null}
+                className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
               >
-                <Star
-                  className={`w-6 h-6 transition-colors ${
-                    i <= (hoverRating || rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
-                  }`}
-                />
+                Cancel
               </button>
-            ))}
+              <button 
+                onClick={executeDelete}
+                disabled={deletingId !== null}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-medium hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {deletingId !== null && <Loader2 className="w-4 h-4 animate-spin" />}
+                Yes, Delete
+              </button>
+            </div>
           </div>
-
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={3}
-            placeholder="Share your thoughts on this product..."
-            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none text-sm text-slate-900 bg-white"
-          />
-
-          <button
-            type="submit"
-            disabled={!rating || !comment.trim() || submitting}
-            className="mt-3 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50 flex items-center gap-2"
-          >
-            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            Submit Review
-          </button>
-        </form>
-      )}
-
-      {reviews.length === 0 ? (
-        <p className="text-slate-500 text-sm">No reviews yet. Be the first to review this product.</p>
-      ) : (
-        <div className="space-y-6">
-          {reviews.map((review) => {
-            const canDelete = review.user === userId || isAdmin;
-            return (
-              <div key={review._id} className="border-b border-slate-100 pb-6 last:border-0">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-slate-900 text-sm">{review.userName}</span>
-                      <div className="flex text-amber-400">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <Star key={i} className={`w-3.5 h-3.5 ${i <= review.rating ? 'fill-amber-400' : 'text-slate-200'}`} />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-xs text-slate-400">
-                      {new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </p>
-                  </div>
-                  {canDelete && (
-                    <button
-                      onClick={() => handleDelete(review._id)}
-                      disabled={deletingId === review._id}
-                      className="text-slate-300 hover:text-red-600 transition-colors disabled:opacity-50"
-                      aria-label="Delete review"
-                    >
-                      {deletingId === review._id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
-                  )}
-                </div>
-                <p className="text-sm text-slate-600 mt-2 leading-relaxed">{review.comment}</p>
-              </div>
-            );
-          })}
         </div>
       )}
-    </div>
+    </>
   );
 }

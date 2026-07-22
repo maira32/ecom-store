@@ -47,9 +47,7 @@ export async function POST(request: Request) {
 
     await connectDB();
 
-    // A review is only legitimate if this user actually bought this
-    // product AND that order has been fulfilled (Completed). Orders
-    // still Pending/Accepted, or ones that were Cancelled, don't count.
+  
     const eligibleOrder = await Order.findOne({
       user: (session.user as any).id,
       status: 'completed',

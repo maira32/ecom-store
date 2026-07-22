@@ -41,6 +41,7 @@ export default async function ProductDetails({ params }: { params: Promise<{ id:
   }).limit(4);
 
   const reviewsRaw = await Review.find({ product: product._id }).sort({ createdAt: -1 }).lean();
+  
   const reviews = reviewsRaw.map((r: any) => ({
     _id: r._id.toString(),
     user: r.user.toString(),
@@ -48,6 +49,7 @@ export default async function ProductDetails({ params }: { params: Promise<{ id:
     rating: r.rating,
     comment: r.comment,
     createdAt: r.createdAt.toISOString(),
+    isEdited: r.isEdited || false, 
   }));
 
   const avgRating = reviews.length
@@ -56,6 +58,7 @@ export default async function ProductDetails({ params }: { params: Promise<{ id:
 
   const session = await getServerSession(authOptions);
   let canReview = false;
+  
   if (session && (session.user as any).role !== 'admin') {
     const eligibleOrder = await Order.findOne({
       user: (session.user as any).id,
@@ -146,8 +149,6 @@ export default async function ProductDetails({ params }: { params: Promise<{ id:
           </div>
         </div>
       )}
-
-     
     </div>
   );
 }
