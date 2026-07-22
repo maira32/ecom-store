@@ -6,7 +6,20 @@ import Order from '@/models/Order';
 import { createNotification } from '@/lib/notifications';
 
 const VALID_STATUSES = ['pending', 'processing', 'completed', 'cancelled'];
-const BACKWARD_FROM_COMPLETED = ['pending', 'processing'];
+
+
+const PIPELINE_RANK: Record<string, number> = {
+  pending: 0,
+  processing: 1,
+  completed: 2,
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending',
+  processing: 'Accepted',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -23,13 +36,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ success: false, message: "Invalid status" }, { status: 400 });
     }
 
-    if (status === 'cancelled' && !reason?.trim()) {
-      return NextResponse.json(
-        { success: false, message: "A reason is required when cancelling an order" },
-        { status: 400 }
-      );
-    }
-
     await connectDB();
 
     const existing = await Order.findById(id);
@@ -37,44 +43,69 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ success: false, message: "Order not found" }, { status: 404 });
     }
 
-    const isRevertFromCompleted =
-      existing.status === 'completed' && BACKWARD_FROM_COMPLETED.includes(status);
+    const fromStatus = existing.status;
 
-    if (isRevertFromCompleted && !reason?.trim()) {
-      return NextResponse.json(
-        { success: false, message: "A reason is required to revert an order out of Completed" },
-        { status: 400 }
-      );
+    if (status === fromStatus) {
+      return NextResponse.json({ success: true, data: existing }, { status: 200 });
     }
 
-    const update: any = { status };
-    if (status === 'cancelled') {
+    const isCancelling = status === 'cancelled';
+    const isReactivating = fromStatus === 'cancelled' && status !== 'cancelled';
+    const isBackwardMove =
+      !isCancelling &&
+      !isReactivating &&
+      PIPELINE_RANK[status] < PIPELINE_RANK[fromStatus];
+
+    
+    const requiresReason = isCancelling || isReactivating || isBackwardMove;
+
+    if (requiresReason && !reason?.trim()) {
+      const messages: Record<string, string> = {
+        cancel: "A reason is required when cancelling an order",
+        reactivate: "A reason is required to reactivate a cancelled order",
+        revert: "A reason is required to revert an order to an earlier status",
+      };
+      const key = isCancelling ? 'cancel' : isReactivating ? 'reactivate' : 'revert';
+      return NextResponse.json({ success: false, message: messages[key] }, { status: 400 });
+    }
+
+    const update: any = {
+      status,
+      $push: {
+        statusHistory: {
+          from: fromStatus,
+          to: status,
+          reason: reason?.trim() || undefined,
+          changedAt: new Date(),
+        },
+      },
+    };
+
+    if (isCancelling) {
       update.cancelReason = reason.trim();
-    }
-    if (isRevertFromCompleted) {
+    } else if (isReactivating || isBackwardMove) {
       update.revertReason = reason.trim();
     }
 
     const updated = await Order.findByIdAndUpdate(id, update, { new: true });
 
-    const STATUS_MESSAGES: Record<string, string> = {
-      pending: 'Your order is now marked Pending.',
-      processing: 'Your order has been accepted and is being prepared.',
-      completed: 'Your order has been marked Completed.',
-      cancelled: `Your order was cancelled: ${reason || ''}`,
-    };
-
     if (updated) {
-      let message = STATUS_MESSAGES[status];
-      if (isRevertFromCompleted) {
-        message = `Your order's status was corrected: ${reason}`;
+      let message: string;
+      if (isCancelling) {
+        message = `Your order was cancelled: ${reason.trim()}`;
+      } else if (isReactivating) {
+        message = `Your order was reactivated and is now ${STATUS_LABELS[status]}: ${reason.trim()}`;
+      } else if (isBackwardMove) {
+        message = `Your order's status was corrected to ${STATUS_LABELS[status]}: ${reason.trim()}`;
+      } else {
+        const FORWARD_MESSAGES: Record<string, string> = {
+          processing: 'Your order has been accepted and is being prepared.',
+          completed: 'Your order has been marked Completed.',
+        };
+        message = FORWARD_MESSAGES[status] || `Your order is now ${STATUS_LABELS[status]}.`;
       }
-      await createNotification(
-        updated.user.toString(),
-        'Order status updated',
-        message,
-        '/orders'
-      );
+
+      await createNotification(updated.user.toString(), 'Order status updated', message, '/orders');
     }
 
     return NextResponse.json({ success: true, data: updated }, { status: 200 });

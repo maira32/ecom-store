@@ -117,13 +117,18 @@ export default async function OrdersPage() {
                   </div>
                 )}
 
-                {order.revertReason && (
-                  <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl p-3 text-sm">
-                    <p className="text-amber-800 font-medium">
-                      This order's status was corrected: {order.revertReason}
-                    </p>
-                  </div>
-                )}
+                {(() => {
+                  const lastEntry = order.statusHistory?.[order.statusHistory.length - 1];
+                  const showNote =
+                    lastEntry?.reason && lastEntry.to !== 'cancelled' && order.status !== 'cancelled';
+                  return showNote ? (
+                    <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl p-3 text-sm">
+                      <p className="text-amber-800 font-medium">
+                        Note from the store: {lastEntry.reason}
+                      </p>
+                    </div>
+                  ) : null;
+                })()}
 
                 {order.paymentStatus === 'refunded' && (
                   <div className="mt-4 bg-gray-100 border border-gray-200 rounded-xl p-3 text-sm">
@@ -143,6 +148,13 @@ export default async function OrdersPage() {
                     </div>
                   ))}
                 </div>
+
+                {order.deliveryAddress && (
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <p className="text-xs text-slate-400 mb-1">Delivered to</p>
+                    <p className="text-sm text-slate-700">{order.deliveryAddress}</p>
+                  </div>
+                )}
               </div>
             </details>
           ))}

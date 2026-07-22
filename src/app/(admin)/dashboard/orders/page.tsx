@@ -35,6 +35,8 @@ const STATUS_DESCRIPTIONS: Record<string, string> = {
   cancelled: 'Order will not be fulfilled.',
 };
 
+// Universally intuitive tint mapping:
+// Pending = yellow, Accepted = blue, Completed = green, Cancelled = red
 const STATUS_STYLES: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
   processing: 'bg-blue-100 text-blue-800',
@@ -42,6 +44,9 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-800',
 };
 
+// Paid = green, Unpaid = neutral, Refunded = gray (grouped visually with
+// Cancelled's "nothing further happening here" meaning, but kept distinct
+// from red since it's a resolved/neutral state, not a warning).
 const PAYMENT_STYLES: Record<string, string> = {
   unpaid: 'bg-slate-100 text-slate-600',
   paid: 'bg-green-100 text-green-800',
@@ -59,7 +64,7 @@ export default function AdminOrdersPage() {
   const [pageSize, setPageSize] = useState(10);
 
   const [cancelTarget, setCancelTarget] = useState<Order | null>(null);
-  const [revertTarget, setRevertTarget] = useState<{ order: Order; newStatus: string } | null>(null);
+  const [revertTarget, setRevertTarget] = useState<{ order: Order; newStatus: string; kind: 'revert' | 'reactivate' } | null>(null);
   const [refundTarget, setRefundTarget] = useState<Order | null>(null);
   const [showLegend, setShowLegend] = useState(false);
 
@@ -79,13 +84,25 @@ export default function AdminOrdersPage() {
     }
   };
 
+  
+  const PIPELINE_RANK: Record<string, number> = { pending: 0, processing: 1, completed: 2 };
+
   const handleStatusChange = async (order: Order, newStatus: string) => {
-    if (newStatus === 'cancelled') {
+    if (newStatus === order.status) return; 
+
+    const isCancelling = newStatus === 'cancelled';
+    const isReactivating = order.status === 'cancelled' && newStatus !== 'cancelled';
+    const isBackwardMove =
+      !isCancelling &&
+      !isReactivating &&
+      PIPELINE_RANK[newStatus] < PIPELINE_RANK[order.status];
+
+    if (isCancelling) {
       setCancelTarget(order);
       return;
     }
-    if (order.status === 'completed' && ['pending', 'processing'].includes(newStatus)) {
-      setRevertTarget({ order, newStatus });
+    if (isReactivating || isBackwardMove) {
+      setRevertTarget({ order, newStatus, kind: isReactivating ? 'reactivate' : 'revert' });
       return;
     }
     await submitStatusChange(order._id, newStatus);
@@ -338,9 +355,13 @@ export default function AdminOrdersPage() {
 
       {revertTarget && (
         <ReasonModal
-          title="Revert this order?"
-          description={`Order ${revertTarget.order._id.slice(-8)} is marked Completed. Moving it back to "${revertTarget.newStatus === 'processing' ? 'Accepted' : 'Pending'}" requires a reason — e.g. "marked complete by mistake."`}
-          confirmLabel="Revert Status"
+          title={revertTarget.kind === 'reactivate' ? 'Reactivate this order?' : 'Revert this order?'}
+          description={
+            revertTarget.kind === 'reactivate'
+              ? `Order ${revertTarget.order._id.slice(-8)} is currently Cancelled. Moving it to "${STATUS_LABELS[revertTarget.newStatus]}" requires a reason — e.g. "customer wants to proceed after all."`
+              : `Order ${revertTarget.order._id.slice(-8)} is currently ${STATUS_LABELS[revertTarget.order.status]}. Moving it back to "${STATUS_LABELS[revertTarget.newStatus]}" requires a reason — e.g. "Marked by mistake."`
+          }
+          confirmLabel={revertTarget.kind === 'reactivate' ? 'Reactivate Order' : 'Revert Status'}
           confirmColorClass="bg-amber-600 hover:bg-amber-700"
           submitting={updatingId === revertTarget.order._id}
           onCancel={() => setRevertTarget(null)}
