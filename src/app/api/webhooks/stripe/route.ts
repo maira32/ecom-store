@@ -106,6 +106,14 @@ export async function POST(request: Request) {
         0
       );
 
+      const capturedAddress = checkoutSession.metadata?.captured_address;
+      const capturedLatStr = checkoutSession.metadata?.captured_lat;
+      const capturedLngStr = checkoutSession.metadata?.captured_lng;
+
+      const deliveryLat = capturedLatStr && capturedLatStr !== 'Not provided' ? parseFloat(capturedLatStr) : undefined;
+      const deliveryLng = capturedLngStr && capturedLngStr !== 'Not provided' ? parseFloat(capturedLngStr) : undefined;
+      const deliveryAddress = capturedAddress && capturedAddress !== 'Not provided' ? capturedAddress : undefined;
+
       const order = await Order.create({
         user: userId,
         items: orderItems,
@@ -114,6 +122,9 @@ export async function POST(request: Request) {
         stripeSessionId: checkoutSession.id,
         stripePaymentIntentId: checkoutSession.payment_intent as string,
         paymentStatus: 'paid',
+        deliveryAddress, 
+        deliveryLat,     
+        deliveryLng,     
       });
 
       cart.items = [];

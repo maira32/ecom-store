@@ -35,8 +35,7 @@ const STATUS_DESCRIPTIONS: Record<string, string> = {
   cancelled: 'Order will not be fulfilled.',
 };
 
-// Universally intuitive tint mapping:
-// Pending = yellow, Accepted = blue, Completed = green, Cancelled = red
+
 const STATUS_STYLES: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
   processing: 'bg-blue-100 text-blue-800',
@@ -44,9 +43,7 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-800',
 };
 
-// Paid = green, Unpaid = neutral, Refunded = gray (grouped visually with
-// Cancelled's "nothing further happening here" meaning, but kept distinct
-// from red since it's a resolved/neutral state, not a warning).
+
 const PAYMENT_STYLES: Record<string, string> = {
   unpaid: 'bg-slate-100 text-slate-600',
   paid: 'bg-green-100 text-green-800',

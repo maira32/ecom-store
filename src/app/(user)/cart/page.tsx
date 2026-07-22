@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Trash2, Minus, Plus, Loader2, ShoppingBag } from 'lucide-react';
 import { syncCartBadge } from '@/lib/cartBadge';
-import toast from 'react-hot-toast'; // Added toast for sleek notifications
+import toast from 'react-hot-toast';
+import LocationFetcher from '@/components/ui/LocationFetcher'; 
 
 interface CartItem {
   _id: string;
@@ -27,6 +28,9 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
+
+  const [locationAddress, setLocationAddress] = useState<string | null>(null);
+  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -66,9 +70,6 @@ export default function CartPage() {
         body: JSON.stringify({ productId, quantity: newQuantity }),
       });
       if (!res.ok) throw new Error('Failed to update quantity');
-      // Quantity changes never change the number of DISTINCT products,
-      // so the badge doesn't need to change here — but syncing anyway
-      // keeps it self-correcting if anything ever drifts.
       await syncCartBadge();
     } catch (err) {
       console.error(err);
@@ -94,6 +95,11 @@ export default function CartPage() {
     }
   };
 
+  const handleLocationFound = (address: string, coords: { lat: number; lng: number }) => {
+    setLocationAddress(address);
+    setLocationCoords(coords);
+  };
+
   const cartTotal = items.reduce(
     (total, item) => total + item.product.price * item.quantity,
     0
@@ -102,7 +108,15 @@ export default function CartPage() {
   const handleCheckout = async () => {
     setCheckingOut(true);
     try {
-      const res = await fetch('/api/checkout', { method: 'POST' });
+      const res = await fetch('/api/checkout', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          locationAddress,
+          locationCoords
+        })
+      });
+      
       const data = await res.json();
 
       if (!res.ok || !data.url) {
@@ -217,20 +231,34 @@ export default function CartPage() {
             ))}
           </div>
 
-          <div className="bg-slate-50 p-6 md:p-8 rounded-2xl h-fit border border-slate-100">
+          <div className="bg-slate-50 p-6 md:p-8 rounded-2xl h-fit border border-slate-100 flex flex-col">
             <h3 className="text-xl font-bold text-slate-900 mb-6">Order Summary</h3>
+            
             <div className="flex justify-between border-b border-slate-200 pb-4 mb-4 text-slate-600">
               <span>Subtotal</span>
               <span>${cartTotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between font-bold text-xl text-slate-900 mb-8">
+            
+            <div className="flex justify-between font-bold text-xl text-slate-900 mb-6">
               <span>Total</span>
               <span>${cartTotal.toFixed(2)}</span>
             </div>
+
+            <div className="mb-6">
+              <LocationFetcher onLocationFound={handleLocationFound} />
+              
+              {locationAddress && (
+                <div className="mt-3 p-3 bg-white rounded-xl border border-slate-200 text-sm text-slate-700 leading-relaxed shadow-sm">
+                  <span className="font-bold text-slate-900 block mb-1">📍 Delivery Area Confirmed:</span>
+                  {locationAddress}
+                </div>
+              )}
+            </div>
+
             <button
               onClick={handleCheckout}
               disabled={checkingOut}
-              className="w-full py-4 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mt-auto"
             >
               {checkingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {checkingOut ? 'Redirecting to payment...' : 'Proceed to Checkout'}

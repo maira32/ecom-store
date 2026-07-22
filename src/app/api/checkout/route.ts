@@ -6,7 +6,7 @@ import Cart from '@/models/Cart';
 import Product from '@/models/Product'; 
 import { stripe } from '@/lib/stripe';
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !(session.user as any).id) {
@@ -16,6 +16,9 @@ export async function POST() {
     if ((session.user as any).role === 'admin') {
       return NextResponse.json({ message: "Admin accounts can't make purchases." }, { status: 403 });
     }
+
+ 
+    const { locationAddress, locationCoords } = await req.json().catch(() => ({}));
 
     const userId = (session.user as any).id;
     await connectDB();
@@ -48,8 +51,12 @@ export async function POST() {
       line_items: lineItems,
       success_url: `${process.env.NEXTAUTH_URL}/order-confirmation?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXTAUTH_URL}/cart`,
+      
       metadata: {
         userId,
+        captured_address: locationAddress || 'Not provided',
+        captured_lat: locationCoords?.lat ? String(locationCoords.lat) : 'Not provided',
+        captured_lng: locationCoords?.lng ? String(locationCoords.lng) : 'Not provided',
       },
     });
 

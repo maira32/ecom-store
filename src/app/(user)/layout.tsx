@@ -6,6 +6,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { connectDB } from '@/lib/mongodb';
 import Cart from '@/models/Cart';
 import { Toaster } from 'react-hot-toast';
+import Product from '@/models/Product';
 
 export default async function UserLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
