@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, Receipt, Undo2, Info, Search } from 'lucide-react';
+import { Loader2, Receipt, Undo2, Info, Search, Lock } from 'lucide-react';
+import toast from 'react-hot-toast';
 import AdminPagination from '@/components/ui/AdminPagination';
 import ReasonModal from '@/components/ui/ReasonModal';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { isTerminal, getRevertEligibility, StatusHistoryEntry } from '@/lib/orderStatus';
 
 interface OrderItem {
   name: string;
@@ -18,6 +21,7 @@ interface Order {
   total: number;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   paymentStatus: 'unpaid' | 'paid' | 'refunded';
+  statusHistory?: StatusHistoryEntry[];
   createdAt: string;
 }
 
@@ -31,10 +35,9 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_DESCRIPTIONS: Record<string, string> = {
   pending: 'Order placed, not yet reviewed by the store.',
   processing: 'Accepted — the store has confirmed and is preparing/shipping it.',
-  completed: 'Delivered / fulfilled in full.',
-  cancelled: 'Order will not be fulfilled.',
+  completed: 'Delivered / fulfilled in full. Final — only correctable for 10 minutes after.',
+  cancelled: 'Order will not be fulfilled. Final — only correctable for 10 minutes after.',
 };
-
 
 const STATUS_STYLES: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -42,7 +45,6 @@ const STATUS_STYLES: Record<string, string> = {
   completed: 'bg-green-100 text-green-800',
   cancelled: 'bg-red-100 text-red-800',
 };
-
 
 const PAYMENT_STYLES: Record<string, string> = {
   unpaid: 'bg-slate-100 text-slate-600',
@@ -61,7 +63,8 @@ export default function AdminOrdersPage() {
   const [pageSize, setPageSize] = useState(10);
 
   const [cancelTarget, setCancelTarget] = useState<Order | null>(null);
-  const [revertTarget, setRevertTarget] = useState<{ order: Order; newStatus: string; kind: 'revert' | 'reactivate' } | null>(null);
+  const [completeTarget, setCompleteTarget] = useState<Order | null>(null);
+  const [revertTarget, setRevertTarget] = useState<{ order: Order; newStatus: string; remainingMs: number } | null>(null);
   const [refundTarget, setRefundTarget] = useState<Order | null>(null);
   const [showLegend, setShowLegend] = useState(false);
 
@@ -81,28 +84,32 @@ export default function AdminOrdersPage() {
     }
   };
 
-  
-  const PIPELINE_RANK: Record<string, number> = { pending: 0, processing: 1, completed: 2 };
+  const handleStatusChange = (order: Order, newStatus: string) => {
+    if (newStatus === order.status) return;
 
-  const handleStatusChange = async (order: Order, newStatus: string) => {
-    if (newStatus === order.status) return; 
+    const fromIsTerminal = isTerminal(order.status);
 
-    const isCancelling = newStatus === 'cancelled';
-    const isReactivating = order.status === 'cancelled' && newStatus !== 'cancelled';
-    const isBackwardMove =
-      !isCancelling &&
-      !isReactivating &&
-      PIPELINE_RANK[newStatus] < PIPELINE_RANK[order.status];
+    if (fromIsTerminal) {
+      const { eligible, remainingMs } = getRevertEligibility(order.status, order.statusHistory || []);
+      if (!eligible) {
+        toast.error(`This order was marked ${STATUS_LABELS[order.status]} more than 10 minutes ago and can no longer be changed.`);
+        return;
+      }
+      setRevertTarget({ order, newStatus, remainingMs });
+      return;
+    }
 
-    if (isCancelling) {
+    if (newStatus === 'cancelled') {
       setCancelTarget(order);
       return;
     }
-    if (isReactivating || isBackwardMove) {
-      setRevertTarget({ order, newStatus, kind: isReactivating ? 'reactivate' : 'revert' });
+
+    if (newStatus === 'completed') {
+      setCompleteTarget(order);
       return;
     }
-    await submitStatusChange(order._id, newStatus);
+
+    submitStatusChange(order._id, newStatus);
   };
 
   const submitStatusChange = async (orderId: string, newStatus: string, reason?: string) => {
@@ -118,15 +125,17 @@ export default function AdminOrdersPage() {
         setOrders((prev) =>
           prev.map((o) => (o._id === orderId ? { ...o, ...data.data } : o))
         );
+        toast.success('Order status updated');
       } else {
-        alert(data.message || 'Failed to update order status');
+        toast.error(data.message || 'Failed to update order status');
       }
     } catch (err) {
       console.error('Status update failed:', err);
-      alert('Something went wrong');
+      toast.error('Something went wrong');
     } finally {
       setUpdatingId(null);
       setCancelTarget(null);
+      setCompleteTarget(null);
       setRevertTarget(null);
     }
   };
@@ -145,12 +154,13 @@ export default function AdminOrdersPage() {
         setOrders((prev) =>
           prev.map((o) => (o._id === orderId ? { ...o, ...data.data } : o))
         );
+        toast.success('Refund issued successfully');
       } else {
-        alert(data.message || 'Refund failed');
+        toast.error(data.message || 'Refund failed');
       }
     } catch (err) {
       console.error('Refund failed:', err);
-      alert('Something went wrong');
+      toast.error('Something went wrong');
     } finally {
       setRefundingId(null);
       setRefundTarget(null);
@@ -264,6 +274,12 @@ export default function AdminOrdersPage() {
                 <tbody className="divide-y divide-slate-200 bg-white">
                   {paginatedOrders.map((order) => {
                     const canRefund = order.paymentStatus === 'paid';
+                    const fromIsTerminal = isTerminal(order.status);
+                    const eligibility = fromIsTerminal
+                      ? getRevertEligibility(order.status, order.statusHistory || [])
+                      : { eligible: true, remainingMs: Infinity };
+                    const isLocked = fromIsTerminal && !eligibility.eligible;
+
                     return (
                       <tr key={order._id} className="hover:bg-slate-50 transition-colors">
                         <td className="whitespace-nowrap px-6 py-4 text-xs font-mono text-slate-600">
@@ -283,18 +299,28 @@ export default function AdminOrdersPage() {
                           {new Date(order.createdAt).toLocaleDateString()}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
-                          <select
-                            value={order.status}
-                            onChange={(e) => handleStatusChange(order, e.target.value)}
-                            disabled={updatingId === order._id}
-                            title={STATUS_DESCRIPTIONS[order.status]}
-                            className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 focus:ring-2 focus:ring-slate-900 disabled:opacity-50 ${STATUS_STYLES[order.status]}`}
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="processing">Accepted</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                          </select>
+                          {isLocked ? (
+                            <span
+                              title={`Finalized more than 10 minutes ago — no longer editable`}
+                              className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${STATUS_STYLES[order.status]}`}
+                            >
+                              <Lock className="w-3 h-3" />
+                              {STATUS_LABELS[order.status]}
+                            </span>
+                          ) : (
+                            <select
+                              value={order.status}
+                              onChange={(e) => handleStatusChange(order, e.target.value)}
+                              disabled={updatingId === order._id}
+                              title={STATUS_DESCRIPTIONS[order.status]}
+                              className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 focus:ring-2 focus:ring-slate-900 disabled:opacity-50 ${STATUS_STYLES[order.status]}`}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="processing">Accepted</option>
+                              <option value="completed">Completed</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                          )}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${PAYMENT_STYLES[order.paymentStatus]}`}>
@@ -350,15 +376,22 @@ export default function AdminOrdersPage() {
         />
       )}
 
+      {completeTarget && (
+        <ConfirmModal
+          title="Mark this order as Completed?"
+          description={`This finalizes order ${completeTarget._id.slice(-8)}. You'll have 10 minutes after confirming to correct it if this was a mistake.`}
+          confirmLabel={updatingId === completeTarget._id ? 'Completing...' : 'Mark Completed'}
+          confirmColorClass="bg-slate-900 hover:bg-slate-800"
+          onCancel={() => setCompleteTarget(null)}
+          onConfirm={() => submitStatusChange(completeTarget._id, 'completed')}
+        />
+      )}
+
       {revertTarget && (
         <ReasonModal
-          title={revertTarget.kind === 'reactivate' ? 'Reactivate this order?' : 'Revert this order?'}
-          description={
-            revertTarget.kind === 'reactivate'
-              ? `Order ${revertTarget.order._id.slice(-8)} is currently Cancelled. Moving it to "${STATUS_LABELS[revertTarget.newStatus]}" requires a reason — e.g. "customer wants to proceed after all."`
-              : `Order ${revertTarget.order._id.slice(-8)} is currently ${STATUS_LABELS[revertTarget.order.status]}. Moving it back to "${STATUS_LABELS[revertTarget.newStatus]}" requires a reason — e.g. "Marked by mistake."`
-          }
-          confirmLabel={revertTarget.kind === 'reactivate' ? 'Reactivate Order' : 'Revert Status'}
+          title="Correct this order?"
+          description={`Order ${revertTarget.order._id.slice(-8)} is marked ${STATUS_LABELS[revertTarget.order.status]}. You have ${Math.ceil(revertTarget.remainingMs / 60000)} minute${Math.ceil(revertTarget.remainingMs / 60000) !== 1 ? 's' : ''} left to correct it. This requires a reason and will be logged.`}
+          confirmLabel="Correct Status"
           confirmColorClass="bg-amber-600 hover:bg-amber-700"
           submitting={updatingId === revertTarget.order._id}
           onCancel={() => setRevertTarget(null)}
