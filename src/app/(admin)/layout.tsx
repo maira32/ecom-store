@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import ConfirmModal from '@/components/ui/ConfirmModal';
+import { Toaster } from 'react-hot-toast';
 import {
   LayoutDashboard,
   Package,
@@ -80,6 +81,7 @@ export default function AdminLayout({
 
   return (
     <div className="flex min-h-screen bg-[#d6d3d3]">
+       <Toaster position="top-right" />
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-[#cfcccc] border-b border-black/10 px-4 h-14 flex items-center justify-between">
         <h2 className="text-lg font-bold tracking-tight text-slate-900">Admin Panel</h2>
         <div className="flex items-center gap-3">
